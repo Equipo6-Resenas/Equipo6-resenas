@@ -1,2 +1,18 @@
-# Equipo4-resenas
-TITEC GRUPO 4 RESEÑAS
+# Equipo 4 Reseñas
+ 
+Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 4 del ramo **Taller de Integración Tecnológica I (TITEC)**.
+ 
+## Integrantes
+ 
+| Nombre | Correo | Rol |
+|---|---|---|
+| Vicente Cruces Collao | vicente.cruces@estudiantes.uv.cl | Integración |
+| Constanza Díaz Pulgar | constanza.diazpu@estudiantes.uv.cl | Scrum Master; QA |
+| Bruno González Luke | bruno.gonzalez@estudiantes.uv.cl | Frontend |
+| Rodrigo Pino Araya | rodrigo.pino@estudiantes.uv.cl | Backend; Base de Datos |
+ 
+## Docentes
+ 
+- Eliana Providel
+- René Noël
+- Sheyla Torres
