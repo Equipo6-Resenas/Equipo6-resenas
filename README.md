@@ -1,4 +1,4 @@
-# Equipo 4 Reseñas
+# Equipo 6 Reseñas
  
 Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 4 del ramo **Taller de Integración Tecnológica I (TITEC)**.
  
