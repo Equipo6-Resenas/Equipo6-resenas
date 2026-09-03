@@ -16,3 +16,7 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 - Eliana Providel
 - René Noël
 - Sheyla Torres
+
+## Dependencias de equipos 
+- Check-in
+- Catálogo de eventos
