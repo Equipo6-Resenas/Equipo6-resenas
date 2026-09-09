@@ -1,6 +1,6 @@
 # Contrato de interfaz: Reseñas ↔ Check-in
 
-**Versión:** 1.0
+**Versión:** 1.1
 **Equipo consumidor:** Reseñas (Equipo6-Resenas)
 **Equipo proveedor:** Check-in
 **Basado en:** Diagrama de secuencia HU-01 (Reseñar evento asistido)
@@ -22,11 +22,11 @@ Dado un usuario y un evento, confirma si existe un check-in / asistencia registr
 Equipo Check-in.
 
 ### 2.3 Quién la consume
-Equipo Reseñas, en el momento en que el cliente finaliza el evento (según diagrama HU-01).
+Equipo Reseñas, en el momento en que el cliente finaliza el evento.
 
 ### 2.4 Endpoint propuesto
 ```
-GET /checkin/asistencia?usuarioId={id}&eventoId={id}
+POST /checkin/asistencia?usuarioId={id}&eventoId={id}
 ```
 
 ### 2.5 Request
@@ -48,23 +48,8 @@ GET /checkin/asistencia?usuarioId={id}&eventoId={id}
 
 | Campo    | Tipo    | Obligatorio | Descripción                                   |
 |----------|---------|:-----------:|------------------------------------------------|
-| asistio  | boolean | Sí           | `true` si el usuario tiene check-in confirmado para el evento; `false` en caso contrario |
+| asistio  | String | Sí           | Se comparte lista de asistencias de parte de check-in, de no salir el nombre o usuario se da por hecho que este no asiste al evento |
 
-**Ejemplo (asistió):**
-```json
-{
-  "asistio": true
-}
-```
-
-**Ejemplo (no asistió):**
-```json
-{
-  "asistio": false
-}
-```
-
-> **Nota de diseño:** Check-in solo entrega este booleano. No se comparten datos personales del asistente, hora de entrada, ni ningún otro dato — Reseñas no los necesita y Check-in no debe exponerlos.
 
 ### 2.7 Códigos de error
 
@@ -95,7 +80,7 @@ Según el diagrama de secuencia:
 
 ## 4. Versionado y cambios
 
-- Cualquier cambio en la forma del request/response de esta operación debe ser **versionado** (ej. `v1`, `v2`) y comunicado con anticipación al equipo de Reseñas.
+- Cualquier cambio en la forma del request/response de esta operación debe ser **versionado** (ej. `1.0`, `1.1`) y comunicado con anticipación al equipo.
 - Cambios que rompan compatibilidad (breaking changes) requieren período de transición acordado entre ambos equipos.
 
 ## 5. Dueños del contrato
@@ -106,10 +91,3 @@ Según el diagrama de secuencia:
 | Consumidor principal   | Reseñas    |
 
 ---
-
-## 6. Pendientes a acordar con el equipo de Check-in
-
-- [ ] Confirmar protocolo (REST vs evento asíncrono vs gRPC).
-- [ ] Confirmar nombre exacto del endpoint y formato de autenticación.
-- [ ] Confirmar SLA de tiempo de respuesta.
-- [ ] Confirmar manejo de reintentos si Check-in no responde.
