@@ -69,8 +69,8 @@ A definir con el equipo de Check-in (propuesta inicial: < 300 ms, ya que esta ll
 Según el diagrama de secuencia:
 
 1. Al finalizar el evento, Reseñas llama a esta operación con `(usuarioId, eventoId)`.
-2. Si `asistio = false` → Reseñas **no habilita** el formulario de reseña.
-3. Si `asistio = true` → Reseñas valida internamente si ya existe una reseña previa de ese usuario para ese evento:
+2. Si **no asiste** → Reseñas **no habilita** el formulario de reseña.
+3. Si **asiste** → Reseñas valida internamente si ya existe una reseña previa de ese usuario para ese evento:
    - Si ya existe → **no habilita** el formulario.
    - Si no existe → **habilita** el formulario de reseña.
 
