@@ -1,9 +1,12 @@
 # Contrato de interfaz: Reseñas ↔ Check-in
 
 **Versión:** 1.1
-**Equipo consumidor:** Reseñas (Equipo6-Resenas)
+
+**Equipo consumidor:** Reseñas
+
 **Equipo proveedor:** Check-in
-**Basado en:** Diagrama de secuencia HU-01 (Reseñar evento asistido)
+
+**Basado en:** Diagrama de secuencia HU-01 (Reseñar evento asistido) y Diagrama de Secuencia HU-05 (Adjuntar Imagen a reseña (requiere misma información))
 
 ---
 
