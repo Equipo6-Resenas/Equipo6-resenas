@@ -13,7 +13,7 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
  
 ## Docentes
  
-- Eliana Providel
+- Eliana Providel/Rodrigo Alfaro
 - René Noël
 - Sheyla Torres
 
