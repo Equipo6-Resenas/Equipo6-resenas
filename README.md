@@ -10,6 +10,16 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 | Constanza Díaz Pulgar | constanza.diazpu@estudiantes.uv.cl | Scrum Master; QA |
 | Bruno González Luke | bruno.gonzalez@estudiantes.uv.cl | Frontend |
 | Rodrigo Pino Araya | rodrigo.pino@estudiantes.uv.cl | Backend; Base de Datos |
+
+
+## Avance entrega 01
+
+| Nombre | Rol | Aspectos de la Rubrica |
+|---|---|---|
+| Vicente Cruces Collao | Integración | BE1, BE3 |
+| Constanza Díaz Pulgar | Scrum Master; QA | GE1, GE2, GE3, GE4; CA1, CA2 |
+| Bruno González Luke | Frontend | UI1, UI2, UI3 |
+| Rodrigo Pino Araya | Backend; Base de Datos | BD1, BD2, BD3, BD4; BE1, BE2, BE3 |
  
 ## Docentes
  
