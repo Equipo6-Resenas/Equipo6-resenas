@@ -6,11 +6,10 @@ info:
 
     El modulo permite:
     - Crear reseñas de eventos.
-    - Consultar reseñas de un evento.
-    - Modificar reseñas.
-    - Eliminar reseñas.
-    - Obtener el promedio de clasificacion de un evento.
-    - Obtener la cantidad total de reseñas de un evento.
+    - Consultar reseñas de un evento, ordenadas de la mas reciente a la más antigua.
+    - Reportar una reseña y eliminarla (organizador del evento).
+    - Responder públicamente una reseña (organizador del evento).
+    - Obtener el promedio de clasificacion y la cantidad total de reseñas de un evento.
 
     Integracion con otros modulos:
 
@@ -24,7 +23,7 @@ info:
     Check-in:
     - Proporciona informacion para verificar que un usuario
       asistio al evento antes de permitirle crear una reseña.
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: https://virtserver.swaggerhub.com/university-645-9f5/TITEC/1.0.0
     description: SwaggerHub API Auto Mocking
