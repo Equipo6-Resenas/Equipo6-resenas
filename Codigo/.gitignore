@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# env files
+.env
+.env.*
+
+# logs
+npm-debug.log*
+yarn-error.log*
+
+# sistema
+.DS_Store
