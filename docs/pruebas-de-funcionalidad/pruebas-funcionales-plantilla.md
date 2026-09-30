@@ -5,7 +5,7 @@ Equipo 6 · Taller de Integración Tecnológica 2026-2 · Evaluación 1 (ítem C
 - **Fecha de ejecución:** 29 / 09 / 2026
 - **Ejecutadas por:** Constanza Díaz
 - **Entorno:** front end en `http://localhost:3000` (en modo local). Indicar si se ejecutó con datos simulados o con el back end real: datos simulados
-- **Evidencias:** capturas en `docs/pruebas/capturas/` (nombre del archivo = ID del caso, por ejemplo `PF-01.png`)
+- **Evidencias:** capturas en `docs/pruebas-de-funcionalidad/screenshot/` (nombre del archivo = ID del caso, por ejemplo `PF-01.png`)
 
 ## Alcance de esta entrega
 
