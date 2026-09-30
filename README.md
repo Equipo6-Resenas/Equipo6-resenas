@@ -30,3 +30,16 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 ## Dependencias de equipos 
 - Check-in
 - Catálogo de eventos
+
+## Ejecución de implementación
+### Comandos para **front-end**
+1. Ingresar a directorio correspondiente al front-end: cd code/frontend
+2. Instalar dependecias: npm install
+3. Lanzar dependencias: npm run dev
+4. Seleccionar http://localhost:3000/ dentro de la consola para lograr visualizar front.
+
+
+### Comandos para **back-end**
+1. Ingresar a directorio correspondiente al front-end: cd code/backend
+2. Instalar dependecias: npm install
+3. Lanzar dependencias: npm run dev
