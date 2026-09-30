@@ -14,9 +14,12 @@ const validarCrearResena = (datos) => {
     errores.push('clasificacion es obligatoria y debe estar entre 1 y 5');
   }
 
-  if (!datos.descripcion || typeof datos.descripcion !== 'string' ||
-      datos.descripcion.trim().length === 0 || datos.descripcion.length > 1000) {
-    errores.push('descripcion es obligatoria y debe tener entre 1 y 1000 caracteres');
+  if (datos.descripcion !== undefined && datos.descripcion !== null) {
+    if (typeof datos.descripcion !== 'string') {
+      errores.push('descripcion debe ser texto');
+    } else if (datos.descripcion.length > 1000) {
+      errores.push('descripcion no puede superar los 1000 caracteres');
+    }
   }
 
   if (errores.length > 0) {
@@ -26,6 +29,13 @@ const validarCrearResena = (datos) => {
   }
 };
 
+const normalizarDescripcion = (descripcion) => {
+  if (descripcion === undefined || descripcion === null) return null;
+  const limpia = String(descripcion).trim();
+  return limpia.length === 0 ? null : limpia;
+};
+
 module.exports = {
-  validarCrearResena
+  validarCrearResena,
+  normalizarDescripcion
 };

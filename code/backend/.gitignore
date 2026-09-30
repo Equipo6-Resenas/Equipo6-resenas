@@ -4,10 +4,12 @@ node_modules/
 # env files
 .env
 .env.*
+!.env.example
 
 # logs
 npm-debug.log*
 yarn-error.log*
+*.log
 
 # sistema
 .DS_Store

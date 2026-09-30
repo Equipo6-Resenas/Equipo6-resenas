@@ -40,6 +40,3 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 
 
 ### Comandos para **back-end**
-1. Ingresar a directorio correspondiente al front-end: cd code/backend
-2. Instalar dependecias: npm install
-3. Lanzar dependencias: npm run dev
