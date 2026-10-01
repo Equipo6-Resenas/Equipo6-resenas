@@ -1,0 +1,46 @@
+.simulation {
+  margin-top: 32px;
+  padding: 16px 20px;
+  color: #2f4374;
+  background: #eef1f8;
+  border: 1px dashed #6b7a9a;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.simTitle {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.simFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.simField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.select {
+  height: 40px;
+  min-width: 220px;
+  padding: 0 12px;
+  color: #2f4374;
+  background: #ffffff;
+  border: 1px solid #d8dff0;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.select:focus-visible {
+  outline: 2px solid #2f4374;
+  outline-offset: 2px;
+}
