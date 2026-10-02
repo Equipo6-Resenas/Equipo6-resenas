@@ -30,7 +30,11 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
   const panelId = useId();
   const { reviews, addReview, addReply } = useReviews(event.id);
 
+  // open: lo que el usuario quiere (abierto/cerrado).
+  // mounted: si el panel existe en la página. Al cerrar se mantiene hasta que
+  // termina la animación de salida, y recién entonces se elimina.
   const [open, setOpen] = useState(false); // Estado 1: colapsado por defecto
+  const [mounted, setMounted] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [justPublishedBy, setJustPublishedBy] = useState<string | null>(null);
 
@@ -45,6 +49,15 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
   const total = reviews.length;
   const average = total > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / total : 0;
   const visible = showAll ? reviews : reviews.slice(0, PREVIEW_COUNT);
+
+  function toggle() {
+    if (open) {
+      setOpen(false); // inicia la animación de salida; el panel se quita al terminar
+    } else {
+      setMounted(true);
+      setOpen(true);
+    }
+  }
 
   function handleSubmit(input: NewReviewInput) {
     if (!currentUser) return;
@@ -93,7 +106,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
           className={styles.toggleButton}
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => setOpen((v) => !v)}
+          onClick={toggle}
         >
           {open ? "Ocultar reseñas" : "Ver reseñas"}
           <TriangleIcon up={open} />
@@ -101,8 +114,15 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
         <span className={styles.line} aria-hidden="true" />
       </div>
 
-      {open && (
-        <div id={panelId} className={styles.panel}>
+      {mounted && (
+        <div
+          id={panelId}
+          className={`${styles.panel} ${open ? "" : styles.panelClosing}`}
+          onAnimationEnd={(e) => {
+            // Solo la animación del propio panel (no la de elementos internos)
+            if (e.target === e.currentTarget && !open) setMounted(false);
+          }}
+        >
           <div className={styles.header}>
             <div className={styles.headerText}>
               <h2 className={styles.title}>Reseñas del evento</h2>

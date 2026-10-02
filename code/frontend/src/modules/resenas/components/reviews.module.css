@@ -103,6 +103,22 @@
   }
 }
 
+/* Animación de salida: va DESPUÉS de .panel para que sustituya su animación */
+.panelClosing {
+  animation: hide 150ms ease-in forwards;
+}
+
+@keyframes hide {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -532,5 +548,11 @@
 @media (prefers-reduced-motion: reduce) {
   .panel {
     animation: none;
+  }
+
+  /* Sin animación no hay "animationend", así que se oculta directamente */
+  .panelClosing {
+    animation: none;
+    display: none;
   }
 }
