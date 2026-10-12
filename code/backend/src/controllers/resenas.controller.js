@@ -30,7 +30,47 @@ const listarResenas = async (req, res, next) => {
   }
 };
 
+const obtenerPromedio = async (req, res, next) => {
+  try {
+    const { id_evento } = req.query;
+    if (!id_evento) {
+      const error = new Error('ID de evento es requerido');
+      error.statusCode = 400;
+      throw error;
+    }
+    const resultado = await resenasService.obtenerPromedioPorEvento(Number(id_evento));
+    return res.status(200).json(resultado);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const crearRespuesta = async (req, res, next) => {
+  try {
+    const { idResena } = req.params;
+    const { texto, id_usuario } = req.body;
+
+    if (!idResena) {
+      const error = new Error('ID de reseña es requerido en la ruta');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const datos = {
+      id_resena: Number(idResena),
+      texto: texto
+    };
+
+    const respuesta = await resenasService.crearRespuesta(datos, Number(id_usuario));
+    return res.status(201).json(respuesta);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   crearResena,
-  listarResenas
+  listarResenas,
+  obtenerPromedio,
+  crearRespuesta
 };

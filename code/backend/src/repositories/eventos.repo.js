@@ -2,7 +2,7 @@ const { query } = require('../config/db');
 
 const obtenerEventoPorId = async (idEvento) => {
   const { rows } = await query(
-    `SELECT id_evento, nombre_evento, descripcion_evento, fecha_evento
+    `SELECT id_evento, nombre_evento, descripcion_evento, fecha_evento, id_organizador
      FROM eventos
      WHERE id_evento = $1`,
     [idEvento]
