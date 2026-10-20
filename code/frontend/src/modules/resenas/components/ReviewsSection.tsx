@@ -28,7 +28,7 @@ interface ReviewsSectionProps {
 
 export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
   const panelId = useId();
-  const { reviews, addReview, addReply } = useReviews(event.id);
+  const { reviews, loading, error, addReview, addReply } = useReviews(event.id);
 
   // open: lo que el usuario quiere (abierto/cerrado).
   // mounted: si el panel existe en la página. Al cerrar se mantiene hasta que
@@ -37,6 +37,8 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
   const [mounted, setMounted] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [justPublishedBy, setJustPublishedBy] = useState<string | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const eligibility = getReviewEligibility({
     event,
@@ -59,15 +61,46 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
     }
   }
 
-  function handleSubmit(input: NewReviewInput) {
+  async function handleSubmit(input: NewReviewInput) {
     if (!currentUser) return;
-    addReview(currentUser, input);
-    setJustPublishedBy(currentUser.id);
+    setSubmittingReview(true);
+    setActionError(null);
+    try {
+      await addReview(currentUser, input);
+      setJustPublishedBy(currentUser.id);
+    } catch (submitError) {
+      setActionError(
+        submitError instanceof Error
+          ? submitError.message
+          : "No se pudo publicar la reseña.",
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
   }
 
   function renderReviewArea() {
+    if (loading) {
+      return <p className={styles.notice} role="status">Conectando con la API de reseñas…</p>;
+    }
+    if (error) {
+      return (
+        <p className={`${styles.notice} ${styles.noticeInfo}`} role="alert">
+          No se pudo conectar con la API de reseñas: {error}
+        </p>
+      );
+    }
     if (eligibility.canReview) {
-      return <ReviewForm onSubmit={handleSubmit} />;
+      return (
+        <>
+          {actionError && (
+            <p className={`${styles.notice} ${styles.noticeInfo}`} role="alert">
+              {actionError}
+            </p>
+          )}
+          <ReviewForm onSubmit={handleSubmit} isSubmitting={submittingReview} />
+        </>
+      );
     }
     if (
       eligibility.reason === "already-reviewed" &&
@@ -154,7 +187,9 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
                     </p>
                   </>
                 ) : (
-                  <p className={styles.summaryCaption}>Aún sin calificaciones</p>
+                  <p className={styles.summaryCaption}>
+                    {error ? "No se pudo cargar el promedio" : "Aún sin calificaciones"}
+                  </p>
                 )}
               </div>
             </div>
@@ -162,7 +197,9 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
 
           {renderReviewArea()}
 
-          {total === 0 ? (
+          {loading ? (
+            <p className={styles.empty} role="status">Cargando reseñas…</p>
+          ) : error ? null : total === 0 ? (
             <p className={styles.empty}>Aún no hay reseñas para este evento.</p>
           ) : (
             <div className={styles.list}>
@@ -172,7 +209,9 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
                   review={review}
                   canReply={canReply}
                   onReply={(reviewId, text) =>
-                    currentUser && addReply(reviewId, currentUser, text)
+                    currentUser
+                      ? addReply(reviewId, currentUser, text)
+                      : Promise.resolve()
                   }
                 />
               ))}

@@ -1,5 +1,15 @@
 const resenasService = require('../services/resenas.service');
 
+const leerEnteroPositivo = (valor, campo) => {
+  const numero = Number(valor);
+  if (!Number.isSafeInteger(numero) || numero <= 0) {
+    const error = new Error(`${campo} debe ser un número entero positivo`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return numero;
+};
+
 const crearResena = async (req, res, next) => {
   try {
     const nuevaResena = await resenasService.crearResena(req.body);
@@ -14,13 +24,18 @@ const listarResenas = async (req, res, next) => {
     const filtros = {};
 
     if (req.query.id_usuario !== undefined) {
-      filtros.id_usuario = Number(req.query.id_usuario);
+      filtros.id_usuario = leerEnteroPositivo(req.query.id_usuario, 'id_usuario');
     }
     if (req.query.id_evento !== undefined) {
-      filtros.id_evento = Number(req.query.id_evento);
+      filtros.id_evento = leerEnteroPositivo(req.query.id_evento, 'id_evento');
     }
     if (req.query.clasificacion !== undefined) {
-      filtros.clasificacion = Number(req.query.clasificacion);
+      filtros.clasificacion = leerEnteroPositivo(req.query.clasificacion, 'clasificacion');
+      if (filtros.clasificacion > 5) {
+        const error = new Error('clasificacion debe estar entre 1 y 5');
+        error.statusCode = 400;
+        throw error;
+      }
     }
 
     const resenas = await resenasService.listarResenas(filtros);
@@ -32,13 +47,8 @@ const listarResenas = async (req, res, next) => {
 
 const obtenerPromedio = async (req, res, next) => {
   try {
-    const { id_evento } = req.query;
-    if (!id_evento) {
-      const error = new Error('ID de evento es requerido');
-      error.statusCode = 400;
-      throw error;
-    }
-    const resultado = await resenasService.obtenerPromedioPorEvento(Number(id_evento));
+    const idEvento = leerEnteroPositivo(req.query.id_evento, 'id_evento');
+    const resultado = await resenasService.obtenerPromedioPorEvento(idEvento);
     return res.status(200).json(resultado);
   } catch (error) {
     return next(error);

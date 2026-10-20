@@ -14,7 +14,7 @@ interface ReviewCardProps {
   review: Review;
   /** true solo si el usuario actual es el organizador del evento. */
   canReply: boolean;
-  onReply: (reviewId: string, text: string) => void;
+  onReply: (reviewId: string, text: string) => void | Promise<void>;
 }
 
 export function ReviewCard({ review, canReply, onReply }: ReviewCardProps) {
@@ -25,6 +25,7 @@ export function ReviewCard({ review, canReply, onReply }: ReviewCardProps) {
   const [replying, setReplying] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   function closeForm() {
     setReplying(false);
@@ -32,15 +33,27 @@ export function ReviewCard({ review, canReply, onReply }: ReviewCardProps) {
     setError(null);
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) {
       setError("Escribe una respuesta antes de publicarla.");
       return;
     }
-    onReply(review.id, trimmed);
-    closeForm();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onReply(review.id, trimmed);
+      closeForm();
+    } catch (replyError) {
+      setError(
+        replyError instanceof Error
+          ? replyError.message
+          : "No se pudo publicar la respuesta.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -103,6 +116,7 @@ export function ReviewCard({ review, canReply, onReply }: ReviewCardProps) {
               setText(e.target.value);
               if (error) setError(null);
             }}
+            disabled={submitting}
             autoFocus
           />
           {error && (
@@ -112,10 +126,10 @@ export function ReviewCard({ review, canReply, onReply }: ReviewCardProps) {
             </p>
           )}
           <div className={styles.actions}>
-            <button type="submit" className={styles.primaryButton}>
-              Publicar respuesta
+            <button type="submit" className={styles.primaryButton} disabled={submitting}>
+              {submitting ? "Publicando…" : "Publicar respuesta"}
             </button>
-            <button type="button" className={styles.secondaryButton} onClick={closeForm}>
+            <button type="button" className={styles.secondaryButton} onClick={closeForm} disabled={submitting}>
               Cancelar
             </button>
           </div>

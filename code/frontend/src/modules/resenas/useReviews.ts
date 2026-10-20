@@ -1,18 +1,41 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { createMockReviews } from "./mockData";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CurrentUser, NewReviewInput, Review } from "./types";
+import { crearResena, crearRespuesta, obtenerResenasDeEvento } from "./api";
 
-/**
- * Estado local de reseñas. TODO: conectar con ./api (obtenerResenasDeEvento y
- * crearResena) cuando el contrato del backend esté cerrado. La firma de
- * addReview y addReply puede mantenerse.
- */
 export function useReviews(eventId: string) {
-  const [reviews, setReviews] = useState<Review[]>(() =>
-    createMockReviews(eventId),
-  );
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setReviews([]);
+
+    obtenerResenasDeEvento(eventId)
+      .then((data) => {
+        if (!cancelled) setReviews(data);
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "No se pudieron cargar las reseñas.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
 
   /** Reseñas ordenadas de la más nueva a la más antigua. */
   const sorted = useMemo(
@@ -25,45 +48,34 @@ export function useReviews(eventId: string) {
   );
 
   const addReview = useCallback(
-    (user: CurrentUser, input: NewReviewInput) => {
-      setReviews((prev) => {
-        // Una reseña por usuario por evento
-        if (prev.some((r) => r.userId === user.id)) return prev;
-        const review: Review = {
-          id: crypto.randomUUID(),
-          eventId,
-          userId: user.id,
-          userName: user.name,
-          rating: input.rating,
-          comment: input.comment,
-          createdAt: new Date().toISOString(),
-        };
-        return [review, ...prev];
-      });
+    async (user: CurrentUser, input: NewReviewInput) => {
+      const review = await crearResena(eventId, user.id, input);
+      setReviews((prev) => [review, ...prev.filter((item) => item.id !== review.id)]);
     },
     [eventId],
   );
 
   const addReply = useCallback(
-    (reviewId: string, author: CurrentUser, text: string) => {
+    async (reviewId: string, author: CurrentUser, text: string) => {
+      const reply = await crearRespuesta(reviewId, author.id, text);
       setReviews((prev) =>
-        prev.map((r) =>
-          r.id === reviewId && !r.reply
+        prev.map((review) =>
+          review.id === reviewId
             ? {
-                ...r,
+                ...review,
                 reply: {
-                  id: crypto.randomUUID(),
-                  authorName: author.name,
-                  text,
-                  createdAt: new Date().toISOString(),
+                  id: String(reply.id_resena),
+                  authorName: reply.nombre_responsable ?? author.name,
+                  text: reply.texto,
+                  createdAt: reply.fecha_respuesta,
                 },
               }
-            : r,
+            : review,
         ),
       );
     },
     [],
   );
 
-  return { reviews: sorted, addReview, addReply };
+  return { reviews: sorted, loading, error, addReview, addReply };
 }

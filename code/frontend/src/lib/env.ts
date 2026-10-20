@@ -1,12 +1,11 @@
 // ============================================================================
 // lib/env.ts
 // ----------------------------------------------------------------------------
-// El front NO conoce las URLs de los 9 microservicios individuales.
-// Solo conoce UNA puerta de entrada: el API Gateway.
+// La mayoría de los módulos usan el API Gateway como puerta de entrada.
+// Reseñas permite configurar una URL directa para el backend durante el
+// desarrollo local (NEXT_PUBLIC_RESENAS_API_URL).
 //
-// El Gateway es responsable de enrutar cada petición al microservicio
-// interno correcto (ej. /api/pagos/* -> servicio de Pagos), manejar CORS
-// en un solo lugar, y centralizar cosas como autenticación o logging.
+// El Gateway enruta los módulos integrados a sus servicios internos.
 //
 // El valor real se define en ".env.local" (ver ".env.example").
 // ============================================================================

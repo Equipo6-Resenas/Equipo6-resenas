@@ -9,7 +9,13 @@ import styles from "./reviews.module.css";
 
 const MAX_COMMENT = 500;
 
-export function ReviewForm({ onSubmit }: { onSubmit: (input: NewReviewInput) => void }) {
+export function ReviewForm({
+  onSubmit,
+  isSubmitting = false,
+}: {
+  onSubmit: (input: NewReviewInput) => void | Promise<void>;
+  isSubmitting?: boolean;
+}) {
   const uid = useId();
   const ratingLabelId = `${uid}-rating-label`;
   const ratingErrorId = `${uid}-rating-error`;
@@ -77,8 +83,8 @@ export function ReviewForm({ onSubmit }: { onSubmit: (input: NewReviewInput) => 
       </div>
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.primaryButton}>
-          Publicar reseña
+        <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
+          {isSubmitting ? "Publicando…" : "Publicar reseña"}
         </button>
       </div>
     </form>

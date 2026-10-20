@@ -2,7 +2,7 @@
 
 Este repositorio es la **base común del front-end** de TicketU, entregada por el _Platform Team_. Está desarrollado en **Next.js** y funciona como la interfaz compartida de los 9 módulos del proyecto.
 
-Cada grupo trabaja principalmente en sus propias carpetas. El front **no conoce las URLs individuales de los microservicios**: todas las peticiones al backend pasan por un único **API Gateway**.
+Cada grupo trabaja principalmente en sus propias carpetas. La mayoría de los módulos usan el **API Gateway**; Reseñas puede conectarse directamente a su backend local durante el desarrollo.
 
 ---
 
@@ -40,13 +40,14 @@ El front quedará disponible en:
 http://localhost:3000
 ```
 
-El archivo `.env.local` debe contener la dirección pública del API Gateway:
+El archivo `.env.local` debe contener la dirección pública del API Gateway y, para probar el módulo de Reseñas directamente contra su backend local, también:
 
 ```env
 NEXT_PUBLIC_GATEWAY_URL=http://localhost:8080
+NEXT_PUBLIC_RESENAS_API_URL=http://localhost:5000
 ```
 
-Mientras el Gateway esté ejecutándose en la misma máquina, ese valor es suficiente.
+El resto de los módulos utiliza el Gateway. Reseñas usa su URL directa mientras se desarrolla este backend.
 
 > `NEXT_PUBLIC_GATEWAY_URL` debe ser una dirección que pueda abrir el navegador. Por eso, para desarrollo local se utiliza `http://localhost:8080`.
 
@@ -62,7 +63,7 @@ src/
 ├── components/     ← componentes compartidos como Header y Footer
 ├── modules/        ← código correspondiente a cada uno de los 9 grupos
 └── lib/
-    └── env.ts      ← URL única del API Gateway
+    └── env.ts      ← configuración del API Gateway
 ```
 
 ### `src/app/`
@@ -94,7 +95,7 @@ modules/<modulo>/
 
 Centraliza la única dirección que necesita conocer el front: la del **API Gateway**.
 
-El front **no almacena las URLs de los 9 microservicios**.
+Los módulos que ya están integrados usan el Gateway; la URL local de Reseñas se configura aparte en `NEXT_PUBLIC_RESENAS_API_URL`.
 
 ---
 
