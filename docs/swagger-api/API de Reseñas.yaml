@@ -23,7 +23,7 @@ info:
     Check-in:
     - Proporciona informacion para verificar que un usuario
       asistio al evento antes de permitirle crear una reseña.
-  version: 1.1.0
+  version: 1.1.1
 servers:
   - url: https://virtserver.swaggerhub.com/university-645-9f5/TITEC/1.0.0
     description: SwaggerHub API Auto Mocking
@@ -211,7 +211,6 @@ components:
     CrearResena:
       required:
         - clasificacion
-        - descripcion
         - id_evento
         - id_usuario
       type: object
@@ -238,7 +237,7 @@ components:
           example: 5
         descripcion:
           maxLength: 1000
-          minLength: 1
+          minLength: 0
           type: string
           description: Comentario realizado por el usuario.
           example: Excelente evento, muy buena organizacion.
