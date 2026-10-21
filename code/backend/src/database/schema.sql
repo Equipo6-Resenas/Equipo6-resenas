@@ -31,9 +31,9 @@ CREATE TABLE resenas (
     id_usuario    INTEGER NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
     id_evento     INTEGER NOT NULL REFERENCES eventos (id_evento) ON DELETE CASCADE,
     clasificacion INTEGER NOT NULL CHECK (clasificacion BETWEEN 1 AND 5),
-    descripcion   TEXT,
+    descripcion   VARCHAR(200),
     fecha_reseña  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    respuesta_texto TEXT,
+    respuesta_texto VARCHAR(200),
     respuesta_fecha TIMESTAMP,
     respuesta_id_usuario INTEGER REFERENCES usuarios (id),
     UNIQUE (id_usuario, id_evento)
