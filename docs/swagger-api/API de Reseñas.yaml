@@ -236,7 +236,7 @@ components:
             El valor debe estar entre 1 y 5.
           example: 5
         descripcion:
-          maxLength: 1000
+          maxLength: 200
           minLength: 0
           type: string
           description: Comentario realizado por el usuario.
@@ -251,8 +251,8 @@ components:
           description: Nueva clasificacion de la reseña.
           example: 4
         descripcion:
-          maxLength: 1000
-          minLength: 1
+          maxLength: 200
+          minLength: 0
           type: string
           description: Nueva descripcion de la reseña.
           example: El evento estuvo muy bueno.
