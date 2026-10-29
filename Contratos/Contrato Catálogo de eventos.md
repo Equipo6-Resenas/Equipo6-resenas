@@ -1,7 +1,7 @@
 # Contrato de interfaz: Reseñas ↔ Catálogo de Eventos
 
 **Versión:** 1.0
-**Estado:** Propuesto
+**Estado:** Aceptado
 **Equipo consumidor:** Reseñas (Equipo6-Resenas)
 **Equipo proveedor:** Catálogo de Eventos
 **Basado en:** HU-01 (Reseñar evento asistido) y HU-02 (Adjuntar imagen a la reseña)
