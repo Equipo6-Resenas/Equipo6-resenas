@@ -20,12 +20,10 @@ import ResenasPlaceholder from "@/modules/resenas/components/ResenasPlaceholder"
 // ResenasPlaceholder importado en app/catalogo/[eventoId]/page.tsx — ver ese
 // archivo para el ejemplo de composición.
 
-export default async function ResenasPage({
+export default function ResenasPage({
   params,
 }: {
-  params: Promise<{ eventoId: string }>;
+  params: { eventoId: string };
 }) {
-  const { eventoId } = await params;
-
-  return <ResenasPlaceholder eventoId={eventoId} />;
+  return <ResenasPlaceholder eventoId={params.eventoId} />;
 }
