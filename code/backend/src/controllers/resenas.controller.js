@@ -10,6 +10,15 @@ const leerEnteroPositivo = (valor, campo) => {
   return numero;
 };
 
+const leerIdEventoContrato = (valor) => {
+  if (typeof valor !== 'string' || !/^evt-[a-zA-Z0-9_-]{1,64}$/.test(valor)) {
+    const error = new Error('eventoId debe usar el formato evt-{id}');
+    error.statusCode = 400;
+    throw error;
+  }
+  return valor;
+};
+
 const crearResena = async (req, res, next) => {
   try {
     const nuevaResena = await resenasService.crearResena(req.body);
@@ -27,7 +36,7 @@ const listarResenas = async (req, res, next) => {
       filtros.id_usuario = leerEnteroPositivo(req.query.id_usuario, 'id_usuario');
     }
     if (req.query.id_evento !== undefined) {
-      filtros.id_evento = leerEnteroPositivo(req.query.id_evento, 'id_evento');
+      filtros.id_evento = leerIdEventoContrato(req.query.id_evento);
     }
     if (req.query.clasificacion !== undefined) {
       filtros.clasificacion = leerEnteroPositivo(req.query.clasificacion, 'clasificacion');
@@ -47,8 +56,34 @@ const listarResenas = async (req, res, next) => {
 
 const obtenerPromedio = async (req, res, next) => {
   try {
-    const idEvento = leerEnteroPositivo(req.query.id_evento, 'id_evento');
+    const idEvento = leerIdEventoContrato(req.query.id_evento);
     const resultado = await resenasService.obtenerPromedioPorEvento(idEvento);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const obtenerResenasPorEvento = async (req, res, next) => {
+  try {
+    const idEvento = leerIdEventoContrato(req.params.eventoId);
+
+    let pagina = 1;
+    if (req.query.pagina !== undefined) {
+      pagina = leerEnteroPositivo(req.query.pagina, 'pagina');
+    }
+
+    let tamano = 20;
+    if (req.query.tamano !== undefined) {
+      tamano = leerEnteroPositivo(req.query.tamano, 'tamano');
+      if (tamano > 100) {
+        const error = new Error('tamano debe ser menor o igual a 100');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    const resultado = await resenasService.obtenerResenasPorEvento(idEvento, pagina, tamano);
     return res.status(200).json(resultado);
   } catch (error) {
     return next(error);
@@ -82,5 +117,6 @@ module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedio,
+  obtenerResenasPorEvento,
   crearRespuesta
 };

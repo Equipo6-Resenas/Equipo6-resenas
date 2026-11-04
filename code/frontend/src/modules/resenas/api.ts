@@ -7,7 +7,7 @@ const BASE_PATH = `${API_URL}/api/resenas`;
 interface ApiReview {
   num_resena: number;
   id_usuario: number;
-  id_evento: number;
+  id_evento: string;
   clasificacion: number;
   descripcion: string | null;
   fecha_reseña: string;
@@ -66,8 +66,10 @@ function mapReview(review: ApiReview): Review {
 }
 
 export async function obtenerResenasDeEvento(eventoId: string): Promise<Review[]> {
-  const id = numericId(eventoId, "El ID del evento");
-  const response = await fetch(`${BASE_PATH}?id_evento=${id}`);
+  if (!/^evt-[a-zA-Z0-9_-]{1,64}$/.test(eventoId)) {
+    throw new Error("El ID del evento debe usar el formato evt-{id}.");
+  }
+  const response = await fetch(`${BASE_PATH}?id_evento=${encodeURIComponent(eventoId)}`);
   const reviews = await parseResponse<ApiReview[]>(response);
   return reviews.map(mapReview);
 }
@@ -77,12 +79,15 @@ export async function crearResena(
   userId: string,
   input: NewReviewInput,
 ): Promise<Review> {
+  if (!/^evt-[a-zA-Z0-9_-]{1,64}$/.test(eventoId)) {
+    throw new Error("El ID del evento debe usar el formato evt-{id}.");
+  }
   const response = await fetch(BASE_PATH, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id_usuario: numericId(userId, "El ID del usuario"),
-      id_evento: numericId(eventoId, "El ID del evento"),
+      id_evento: eventoId,
       clasificacion: input.rating,
       descripcion: input.comment,
     }),

@@ -1,0 +1,60 @@
+services:
+  postgres-resenas:
+    image: postgres:16-alpine
+    container_name: postgres-resenas
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-resenas}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT_PUBLISHED:-5433}:5432"
+    volumes:
+      - resenas-postgres-data:/var/lib/postgresql/data
+      - ./src/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./src/database/seed.sql:/docker-entrypoint-initdb.d/20-seed.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-resenas}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      plataforma-eventos-net:
+        aliases:
+          - postgres-resenas
+
+  ms-resenas:
+    build: .
+    container_name: ms-resenas
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      DB_HOST: postgres-resenas
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-resenas}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://gateway:8080}
+      CATALOGO_TIMEOUT_MS: 500
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres-resenas:
+        condition: service_healthy
+    networks:
+      plataforma-eventos-net:
+        aliases:
+          - ms-resenas
+          - resenas-service
+
+volumes:
+  resenas-postgres-data:
+
+networks:
+  plataforma-eventos-net:
+    external: true

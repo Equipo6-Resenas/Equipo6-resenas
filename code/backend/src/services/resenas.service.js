@@ -3,11 +3,14 @@ const usuariosRepo = require('../repositories/usuarios.repo');
 const eventosRepo = require('../repositories/eventos.repo');
 const asistenciaRepo = require('../repositories/asistencia.repo');
 const resenasRepo = require('../repositories/resenas.repo');
+const catalogoService = require('./catalogo.service');
 
 const crearResena = async (datos) => {
   const { id_usuario, id_evento, clasificacion, descripcion } = datos;
 
   validarCrearResena(datos);
+
+  await catalogoService.obtenerEventoDelCatalogo(id_evento);
 
   const usuario = await usuariosRepo.obtenerUsuarioPorId(id_usuario);
   if (!usuario) {
@@ -58,6 +61,37 @@ const listarResenas = async (filtros = {}) => {
 const obtenerPromedioPorEvento = async (idEvento) => {
   const promedio = await resenasRepo.obtenerPromedioPorEvento(idEvento);
   return { promedio };
+};
+
+const obtenerResenasPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
+  const evento = await eventosRepo.obtenerEventoPorId(idEvento);
+  if (!evento) {
+    const error = new Error('Evento no encontrado');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const resumen = await resenasRepo.obtenerResumenPorEvento(idEvento, pagina, tamano);
+
+  return {
+    promedio: resumen.promedio,
+    totalResenas: resumen.total,
+    resenas: resumen.resenas.map((resena) => {
+      const item = {
+        usuarioId: String(resena.id_usuario),
+        calificacion: resena.clasificacion,
+        fecha: resena.fecha_reseña instanceof Date
+          ? resena.fecha_reseña.toISOString()
+          : new Date(resena.fecha_reseña).toISOString()
+      };
+
+      if (resena.descripcion !== null) {
+        item.comentario = resena.descripcion;
+      }
+
+      return item;
+    })
+  };
 };
 
 const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
@@ -116,5 +150,6 @@ module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedioPorEvento,
+  obtenerResenasPorEvento,
   crearRespuesta
 };

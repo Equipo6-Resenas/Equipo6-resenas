@@ -60,6 +60,37 @@ const obtenerPromedioPorEvento = async (idEvento) => {
   return parseFloat(rows[0].promedio);
 };
 
+const obtenerResumenPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
+  const { rows: estadisticas } = await query(
+    `SELECT COUNT(*)::int AS total,
+            AVG(clasificacion) AS promedio
+     FROM resenas
+     WHERE id_evento = $1`,
+    [idEvento]
+  );
+
+  const offset = (pagina - 1) * tamano;
+  const { rows } = await query(
+    `SELECT r.num_resena,
+            r.id_usuario,
+            r.clasificacion,
+            r.descripcion,
+            r.fecha_reseña
+     FROM resenas r
+     WHERE r.id_evento = $1
+     ORDER BY r.fecha_reseña DESC, r.num_resena DESC
+     LIMIT $2 OFFSET $3`,
+    [idEvento, tamano, offset]
+  );
+
+  const total = estadisticas[0].total;
+  const promedio = estadisticas[0].promedio === null
+    ? null
+    : Math.round(Number(estadisticas[0].promedio) * 10) / 10;
+
+  return { total, promedio, resenas: rows };
+};
+
 const obtenerResenaPorId = async (idResena) => {
   const { rows } = await query(
     `${SELECT_RESENAS} WHERE r.num_resena = $1`,
@@ -85,6 +116,7 @@ module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedioPorEvento,
+  obtenerResumenPorEvento,
   obtenerResenaPorId,
   actualizarRespuesta
 };

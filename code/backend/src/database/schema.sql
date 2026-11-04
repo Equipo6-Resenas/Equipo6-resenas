@@ -11,7 +11,7 @@ CREATE TABLE usuarios (
 );
 
 CREATE TABLE eventos (
-    id_evento          SERIAL PRIMARY KEY,
+    id_evento          TEXT PRIMARY KEY,
     nombre_evento      TEXT NOT NULL,
     descripcion_evento TEXT NOT NULL,
     fecha_evento       TIMESTAMP NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE eventos (
 CREATE TABLE asistencia_eventos (
     id_asistencia    SERIAL PRIMARY KEY,
     id_usuario       INTEGER NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
-    id_evento        INTEGER NOT NULL REFERENCES eventos (id_evento) ON DELETE CASCADE,
+    id_evento        TEXT NOT NULL REFERENCES eventos (id_evento) ON DELETE CASCADE,
     fecha_asistencia TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (id_usuario, id_evento)
 );
@@ -29,7 +29,7 @@ CREATE TABLE asistencia_eventos (
 CREATE TABLE resenas (
     num_resena    SERIAL PRIMARY KEY,
     id_usuario    INTEGER NOT NULL REFERENCES usuarios (id) ON DELETE CASCADE,
-    id_evento     INTEGER NOT NULL REFERENCES eventos (id_evento) ON DELETE CASCADE,
+    id_evento     TEXT NOT NULL REFERENCES eventos (id_evento) ON DELETE CASCADE,
     clasificacion INTEGER NOT NULL CHECK (clasificacion BETWEEN 1 AND 5),
     descripcion   VARCHAR(200),
     fecha_reseña  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

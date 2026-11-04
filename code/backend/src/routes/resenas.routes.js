@@ -9,6 +9,9 @@ router.get('/', resenasController.listarResenas);
 // Nuevo endpoint para obtener el promedio de calificaciones de un evento
 router.get('/promedio', resenasController.obtenerPromedio);
 
+// Endpoint integrado con el catálogo: reseñas y promedio de un evento
+router.get('/evento/:eventoId', resenasController.obtenerResenasPorEvento);
+
 // Nuevo endpoint para crear una respuesta a una reseña específica
 router.post('/:idResena/respuestas', resenasController.crearRespuesta);
 

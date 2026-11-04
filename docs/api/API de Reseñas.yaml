@@ -165,8 +165,8 @@ paths:
           description: Identificador del evento.
           required: true
           schema:
-            type: integer
-            example: 25
+            type: string
+            example: evt-101
       responses:
         '200':
           description: Resumen de reseñas obtenido correctamente
@@ -195,8 +195,8 @@ paths:
           description: Identificador del evento.
           required: true
           schema:
-            type: integer
-            example: 25
+            type: string
+            example: evt-101
       responses:
         '200':
           description: Reseñas del evento obtenidas correctamente
@@ -223,10 +223,10 @@ components:
             la asistencia al evento.
           example: 58
         id_evento:
-          type: integer
+          type: string
           description: |
             Identificador del evento obtenido desde Catalogo.
-          example: 25
+          example: evt-101
         clasificacion:
           maximum: 5
           minimum: 1
@@ -274,9 +274,9 @@ components:
           description: Comentario realizado por el usuario.
           example: Excelente evento, muy buena organizacion.
         id_evento:
-          type: integer
+          type: string
           description: Identificador del evento.
-          example: 25
+          example: evt-101
         id_usuario:
           type: integer
           description: Identificador del usuario.
@@ -289,9 +289,9 @@ components:
       type: object
       properties:
         id_evento:
-          type: integer
+          type: string
           description: Identificador del evento.
-          example: 25
+          example: evt-101
         promedio:
           maximum: 5
           minimum: 0
@@ -310,9 +310,9 @@ components:
       type: object
       properties:
         id_evento:
-          type: integer
+          type: string
           description: Identificador del evento.
-          example: 25
+          example: evt-101
         promedio:
           maximum: 5
           minimum: 0

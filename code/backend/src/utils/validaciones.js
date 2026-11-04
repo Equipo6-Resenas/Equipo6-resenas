@@ -5,8 +5,8 @@ const validarCrearResena = (datos) => {
     errores.push('id_usuario es obligatorio y debe ser un numero entero');
   }
 
-  if (!datos.id_evento || typeof datos.id_evento !== 'number') {
-    errores.push('id_evento es obligatorio y debe ser un numero entero');
+  if (typeof datos.id_evento !== 'string' || !/^evt-[a-zA-Z0-9_-]{1,64}$/.test(datos.id_evento)) {
+    errores.push('id_evento es obligatorio y debe usar el formato evt-{id}');
   }
 
   if (!datos.clasificacion || typeof datos.clasificacion !== 'number' ||
