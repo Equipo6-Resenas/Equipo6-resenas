@@ -1,0 +1,16 @@
+    fecha_consulta_chile    
+----------------------------
+ 2026-11-04 08:18:23.420945
+(1 row)
+
+ id_evento | total_resenas | promedio 
+-----------+---------------+----------
+ evt-101   |             2 |      4.5
+(1 row)
+
+ num_resena | id_usuario | id_evento | clasificacion |                 descripcion                 
+------------+------------+-----------+---------------+---------------------------------------------
+          1 |          1 | evt-101   |             5 | Excelente organizacion y contenido.
+          2 |          2 | evt-101   |             4 | Muy buena experiencia, aunque inicio tarde.
+(2 rows)
+

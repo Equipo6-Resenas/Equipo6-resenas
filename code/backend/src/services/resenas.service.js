@@ -50,7 +50,8 @@ const crearResena = async (datos) => {
   return {
     ...nuevaResena,
     nombre_usuario: usuario.nombre,
-    nombre_evento: evento.nombre_evento
+    nombre_evento: evento.nombre_evento,
+    fecha_evento: eventoCatalogo.fecha
   };
 };
 
@@ -64,31 +65,19 @@ const obtenerPromedioPorEvento = async (idEvento) => {
 };
 
 const obtenerResenasPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
-  const evento = await eventosRepo.obtenerEventoPorId(idEvento);
-  if (!evento) {
-    const error = new Error('Evento no encontrado');
-    error.statusCode = 404;
-    throw error;
-  }
-
   const resumen = await resenasRepo.obtenerResumenPorEvento(idEvento, pagina, tamano);
 
   return {
+    id_evento: idEvento,
     promedio: resumen.promedio,
-    totalResenas: resumen.total,
+    total_resenas: resumen.total,
     resenas: resumen.resenas.map((resena) => {
       const item = {
-        usuarioId: String(resena.id_usuario),
+        usuario_id: String(resena.id_usuario),
         calificacion: resena.clasificacion,
-        fecha: resena.fecha_reseña instanceof Date
-          ? resena.fecha_reseña.toISOString()
-          : new Date(resena.fecha_reseña).toISOString()
+        fecha: new Date(resena.fecha_reseña).toISOString()
       };
-
-      if (resena.descripcion !== null) {
-        item.comentario = resena.descripcion;
-      }
-
+      if (resena.descripcion !== null) item.comentario = resena.descripcion;
       return item;
     })
   };
@@ -146,10 +135,21 @@ const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
   };
 };
 
+const obtenerCalificacionesBasicas = async (ids) => {
+  const filas = await resenasRepo.obtenerCalificacionesBasicas(ids);
+  const calificaciones = {};
+  ids.forEach((id) => { calificaciones[id] = { promedio: null, total_resenas: 0 }; });
+  filas.forEach((f) => {
+    calificaciones[f.id_evento] = { promedio: Math.round(Number(f.promedio) * 10) / 10, total_resenas: f.total };
+  });
+  return { calificaciones };
+};
+
 module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedioPorEvento,
   obtenerResenasPorEvento,
-  crearRespuesta
+  crearRespuesta,
+  obtenerCalificacionesBasicas
 };

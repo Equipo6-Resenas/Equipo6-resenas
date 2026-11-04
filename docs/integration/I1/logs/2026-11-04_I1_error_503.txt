@@ -1,0 +1,11 @@
+04-11-2026  8:26:13,59 - I1 caso de error: Catalogo no disponible 
+HTTP/1.1 503 Service Unavailable
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 73
+ETag: W/"49-4Os38Y5sn1VVxbtLHvI+EQzX0GU"
+Date: Wed, 04 Nov 2026 11:26:17 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"error":"No pudimos verificar el evento en Catalogo, intenta mas tarde"}

@@ -48,7 +48,7 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 2. Instalar dependecias: npm install
 3. Copiar `.env.example` a `.env.local` (PowerShell: `Copy-Item .env.example .env.local`).
 4. Lanzar dependencias: npm run dev
-5. Abrir http://localhost:3000/catalogo/1/resenas para probar reseñas del evento de ejemplo (ID 1).
+5. Abrir http://localhost:3000/catalogo/evt-101/resenas para probar reseñas del evento de ejemplo.
 
 
 ### Comandos para **back-end**
@@ -63,8 +63,9 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 
 
 ### Comandos para probar el docker 
-1. acceder a Equipo6-resenas\code\backend
-2. Copy-Item .env.example .env -ErrorAction SilentlyContinue ----guarda los datos del .env.example en .env para las variables de entorno e indica que ignore el error en caso de que el archivo ya este creado y continue ejecutando
+1. acceder a directorio cd Equipo6-resenas\code\backend
+2. `Copy-Item .env.example .env -ErrorAction SilentlyContinue` para **`PowerShell`** o bien `copy .env.example .env` para **`CMD`** 
+esto se encarga de guardar los datos del .env.example en .env para las variables de entorno e indica que ignore el error en caso de que el archivo ya este creado y continue ejecutando
 3. docker network create plataforma-eventos-net     se crea la red virutal en donde se ejecutara
 4. docker compose up --build -d      lee el archivo de docker-compuse.yml y los pone en marcha
 5. docker compose ps     muestra la tabla del estado actual del docker

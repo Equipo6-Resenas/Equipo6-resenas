@@ -19,8 +19,9 @@ app.use((req, res, next) => {
   return next();
 });
 app.use(express.json());
-
+app.use((req, res, next) => { console.log(new Date().toISOString(), req.method, req.originalUrl); next(); });
 app.use('/api/resenas', resenasRoutes);
+app.use('/api/v1/resenas', resenasRoutes);
 
 app.get('/health', async (req, res, next) => {
   try {

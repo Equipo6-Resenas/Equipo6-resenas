@@ -1,0 +1,1 @@
+docker exec -i postgres-resenas psql -U postgres -d resenas < docs\integration\I1\database\consulta_antes.sql > docs\integration\I1\database\resultado_antes_2026-11-04.txt

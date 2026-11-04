@@ -113,10 +113,24 @@ const crearRespuesta = async (req, res, next) => {
   }
 };
 
+const obtenerCalificacionesBasicas = async (req, res, next) => {
+  try {
+    const ids = req.body && req.body.lista_id_eventos;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      const error = new Error('lista_id_eventos debe ser un arreglo no vacio');
+      error.statusCode = 400;
+      throw error;
+    }
+    ids.forEach(leerIdEventoContrato);
+    return res.status(200).json(await resenasService.obtenerCalificacionesBasicas(ids));
+  } catch (error) { return next(error); }
+};
+
 module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedio,
   obtenerResenasPorEvento,
+  obtenerCalificacionesBasicas,
   crearRespuesta
 };

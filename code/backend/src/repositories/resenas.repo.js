@@ -112,11 +112,19 @@ const actualizarRespuesta = async ({ idResena, textoRespuesta, idUsuarioResponsa
   return rows[0];
 };
 
+const obtenerCalificacionesBasicas = async (ids) => {
+  const { rows } = await query(
+    `SELECT id_evento, COUNT(*)::int AS total, AVG(clasificacion) AS promedio
+     FROM resenas WHERE id_evento = ANY($1) GROUP BY id_evento`, [ids]);
+  return rows;
+};
+
 module.exports = {
   crearResena,
   listarResenas,
   obtenerPromedioPorEvento,
   obtenerResumenPorEvento,
   obtenerResenaPorId,
-  actualizarRespuesta
+  actualizarRespuesta,
+  obtenerCalificacionesBasicas
 };
