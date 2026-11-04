@@ -12,7 +12,21 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 | Rodrigo Pino Araya | rodrigo.pino@estudiantes.uv.cl | Backend; Base de Datos |
 
 
-## Avance entrega 02
+## Entrega 02
+### Responsabilidad
+| Responsable | Item/s de rúbrica | Rol |
+|---|---|---|
+| Vicente Cruces Collao | BE1 | Backend (Integración) |
+| Constanza Díaz Pulgar | GE1, CA1 | Gestión; QA |
+| Bruno González Luke | UI1 | Frontend |
+| Rodrigo Pino Araya | BE1, BD1 | Backend; Base de Datos |
+
+### Integraciones
+| Integración | Tipo (A, B o C) | Módulo contraparte | Servicio, endpoint o tópico | Contrato | Ítem en GitHub |
+|---|---|---|---|---|---|
+| I1 | A | Catálogo |  | [Contrato Catalogo de eventos](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Cat%C3%A1logo%20de%20eventos.md) |  |
+| I2 | A | Check-in |  | [Contrato Check-in](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Check-in.md) |  |
+| I3 | B | Catálogo |  | [Contrato Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) |  |
 
 ## Docentes
  
