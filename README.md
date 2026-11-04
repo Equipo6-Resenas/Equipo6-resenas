@@ -24,9 +24,8 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 ### Integraciones
 | Integración | Tipo (A, B o C) | Módulo contraparte | Servicio, endpoint o tópico | Contrato | Ítem en GitHub |
 |---|---|---|---|---|---|
-| I1 | A | Catálogo |  | [Contrato Catalogo de eventos](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Cat%C3%A1logo%20de%20eventos.md) |  |
-| I2 | A | Check-in |  | [Contrato Check-in](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Check-in.md) |  |
-| I3 | B | Catálogo |  | [Contrato Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) |  |
+| I1 | A | Catálogo | `GET /eventos/{eventoId}` | [Contrato Catalogo de eventos](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Cat%C3%A1logo%20de%20eventos.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
+| I2 | B | Catálogo | `GET /resenas/evento/{eventoId}`| [Contrato Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/Contratos/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/16 |
 
 ## Docentes
  
