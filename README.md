@@ -27,9 +27,14 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 | I1 | A | Catálogo | `GET /eventos/{eventoId}` | [Contrato Catalogo de eventos](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20Cat%C3%A1logo%20de%20eventos.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
 | I2 | B | Catálogo | `GET /resenas/evento/{eventoId}`| [Contrato Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/16 |
 
+### Evidencias
+[Evidencias I1](https://github.com/Equipo6-Resenas/Equipo6-resenas/tree/main/docs/integration/I1)
+
+[Evidencias I2](https://github.com/Equipo6-Resenas/Equipo6-resenas/tree/main/docs/integration/I2)
+
 ## Docentes
  
-- Eliana Providel/Rodrigo Alfaro
+- Rodrigo Alfaro
 - René Noël
 - Sheyla Torres
 
