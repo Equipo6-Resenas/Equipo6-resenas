@@ -1,0 +1,35 @@
+Fecha y hora de ejecucion: 04-11-2026 11:32:29,14  
+newman
+
+I1 - Reseñas consume datos del evento desde Catálogo
+
+→ I1-01 Éxito: crear reseña con evento validado en Catálogo
+  POST http://localhost:5000/api/resenas [503 Service Unavailable, 325B, 609ms]
+  1. Estado 201
+  2. Incluye el nombre del evento entregado por Catálogo
+  3. Guarda la calificación enviada
+
+→ I1-02 Error: Catálogo no disponible
+  POST http://localhost:5000/api/resenas [503 Service Unavailable, 325B, 513ms]
+  √  Estado 503
+  √  Mensaje comprensible, sin datos técnicos
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                  2 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                  2 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                  0 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                  5 │                  3 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 1274ms                                        │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 146B (approx)                                │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 561ms [min: 513ms, max: 609ms, s.d.: 48ms] │
+└───────────────────────────────────────────────────────────────────┘

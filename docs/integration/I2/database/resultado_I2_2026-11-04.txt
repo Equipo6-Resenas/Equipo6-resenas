@@ -1,6 +1,6 @@
     fecha_consulta_chile    
 ----------------------------
- 2026-11-04 08:18:23.420945
+ 2026-11-04 09:15:12.833994
 (1 row)
 
  id_evento | total_resenas | promedio 

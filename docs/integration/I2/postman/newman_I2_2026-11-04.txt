@@ -1,0 +1,48 @@
+Fecha y hora de ejecucion: 04-11-2026 11:28:27,71  
+newman
+
+I2 - Reseñas ofrece promedio y listado a Catálogo
+
+→ I2-01 Éxito: evento con reseñas
+  GET http://localhost:5000/api/v1/resenas/evento/evt-101 [200 OK, 557B, 234ms]
+  √  Estado 200
+  √  Trae id_evento, promedio, total_resenas y resenas
+  √  Promedio 4.5 y total 2 (seed)
+  √  total_resenas coincide con la lista
+  √  Cada reseña trae usuario_id, calificacion y fecha
+  √  Orden de más reciente a menos reciente
+
+→ I2-02 Éxito: evento sin reseñas
+  GET http://localhost:5000/api/v1/resenas/evento/evt-103 [200 OK, 305B, 12ms]
+  √  Estado 200
+  √  Estado vacío: promedio null, total 0, lista vacía
+
+→ I2-03 Error: id de evento con formato inválido
+  GET http://localhost:5000/api/v1/resenas/evento/1 [400 Bad Request, 294B, 7ms]
+  √  Estado 400
+  √  Informa el error
+
+→ I2-04 Evento desconocido para Reseñas
+  GET http://localhost:5000/api/v1/resenas/evento/evt-999 [200 OK, 305B, 7ms]
+  √  Estado 200
+  √  Sin reseñas
+
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│                requests │                 4 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│            test-scripts │                 4 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│      prerequest-scripts │                 0 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              assertions │                12 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+│ total run duration: 615ms                                      │
+├────────────────────────────────────────────────────────────────┤
+│ total data received: 510B (approx)                             │
+├────────────────────────────────────────────────────────────────┤
+│ average response time: 65ms [min: 7ms, max: 234ms, s.d.: 97ms] │
+└────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,1 @@
+newman run docs\integration\I1\postman\I1.postman_collection.json -e docs\integration\I1\postman\entorno.postman_environment.json --folder "I1-02 Error: Catálogo no disponible" --reporters cli,json --reporter-json-export docs\integration\I1\postman\resultado_I1_error_2026-11-04.json > docs\integration\I1\postman\newman_I1_error_2026-11-04.txt

@@ -17,7 +17,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-resenas}",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-resenas}"
         ]
       interval: 5s
       timeout: 5s
@@ -32,17 +32,18 @@ services:
     container_name: ms-resenas
     restart: unless-stopped
     environment:
-      PORT: 5000
+      PORT: ${PORT:-3000}
       DB_HOST: postgres-resenas
       DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
-      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://gateway:8080}
-      CATALOGO_TIMEOUT_MS: 500
+      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_URL:-http://catalogo-service:3000}
+      API_GATEWAY_URL: ${API_GATEWAY_URL:-http://api-gateway:8080}
+      CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-500}
     ports:
-      - "5000:5000"
+      - "5000:3000"
     depends_on:
       postgres-resenas:
         condition: service_healthy
