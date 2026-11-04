@@ -60,3 +60,11 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 5. Recargar los datos iniciales (opcional): npm run db:seed
 6. Lanzar dependencias: npm start
 **La API estará levantada en el puerto 5000**
+
+
+### Comandos para probar el docker 
+1. acceder a Equipo6-resenas\code\backend
+2. Copy-Item .env.example .env -ErrorAction SilentlyContinue          guarda los datos del .env.example en .env para las variables de entorno e indica que ignore el error en caso de que el archivo ya este creado y continue ejecutando
+3. docker network create plataforma-eventos-net     se crea la red virutal en donde se ejecutara
+4. docker compose up --build -d      lee el archivo de docker-compuse.yml y los pone en marcha
+5. docker compose ps     muestra la tabla del estado actual del docker
