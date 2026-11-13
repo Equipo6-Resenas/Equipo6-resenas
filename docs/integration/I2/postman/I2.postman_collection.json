@@ -1,0 +1,141 @@
+{
+  "info": {
+    "name": "I2 - Reseñas ofrece promedio y listado a Catálogo",
+    "description": "Integración I2 (tipo B, servicio ofrecido). Contrato acordado con Catálogo: GET /api/v1/resenas/evento/{id_evento}. Datos esperados según seed.sql: evt-101 tiene 2 reseñas (promedio 4.5), evt-103 no tiene reseñas. Ejecutar con el backend de Reseñas levantado y la base recién sembrada.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "I2-01 Éxito: evento con reseñas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/v1/resenas/evento/{{eventoConResenas}}",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "v1", "resenas", "evento", "{{eventoConResenas}}"]
+        },
+        "description": "Resultado esperado: 200, id_evento, promedio 4.5, total_resenas 2, reseñas de la más reciente a la más antigua, campos en snake_case."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Trae id_evento, promedio, total_resenas y resenas', () => {",
+              "  pm.expect(body).to.have.property('id_evento', pm.environment.get('eventoConResenas'));",
+              "  pm.expect(body).to.have.property('promedio');",
+              "  pm.expect(body).to.have.property('total_resenas');",
+              "  pm.expect(body.resenas).to.be.an('array');",
+              "});",
+              "pm.test('Promedio 4.5 y total 2 (seed)', () => {",
+              "  pm.expect(body.promedio).to.eql(4.5);",
+              "  pm.expect(body.total_resenas).to.eql(2);",
+              "});",
+              "pm.test('total_resenas coincide con la lista', () => pm.expect(body.total_resenas).to.eql(body.resenas.length));",
+              "pm.test('Cada reseña trae usuario_id, calificacion y fecha', () => {",
+              "  body.resenas.forEach(r => {",
+              "    pm.expect(r).to.have.property('usuario_id');",
+              "    pm.expect(r.calificacion).to.be.within(1, 5);",
+              "    pm.expect(r).to.have.property('fecha');",
+              "  });",
+              "});",
+              "pm.test('Orden de más reciente a menos reciente', () => {",
+              "  const f = body.resenas.map(r => new Date(r.fecha).getTime());",
+              "  pm.expect(f).to.eql([...f].sort((a, b) => b - a));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "I2-02 Éxito: evento sin reseñas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/v1/resenas/evento/{{eventoSinResenas}}",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "v1", "resenas", "evento", "{{eventoSinResenas}}"]
+        },
+        "description": "Resultado esperado: 200 con promedio null, total_resenas 0 y resenas []. Nunca un error."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Estado vacío: promedio null, total 0, lista vacía', () => {",
+              "  pm.expect(body.promedio).to.eql(null);",
+              "  pm.expect(body.total_resenas).to.eql(0);",
+              "  pm.expect(body.resenas).to.eql([]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "I2-03 Error: id de evento con formato inválido",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/v1/resenas/evento/1",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "v1", "resenas", "evento", "1"]
+        },
+        "description": "Resultado esperado: 400, el id debe tener el formato evt-{id}."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+              "pm.test('Informa el error', () => pm.expect(pm.response.json()).to.have.property('error'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "I2-04 Evento desconocido para Reseñas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/v1/resenas/evento/evt-999",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "v1", "resenas", "evento", "evt-999"]
+        },
+        "description": "Resultado esperado: 200 con lista vacía. Un evento sin reseñas no es un error, así Catálogo no cae en su respaldo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Sin reseñas', () => {",
+              "  pm.expect(body.promedio).to.eql(null);",
+              "  pm.expect(body.total_resenas).to.eql(0);",
+              "  pm.expect(body.resenas).to.eql([]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

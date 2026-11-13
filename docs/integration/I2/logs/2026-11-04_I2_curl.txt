@@ -1,0 +1,49 @@
+04-11-2026  9:15:12,36 - Evidencia I2 (GET /api/v1/resenas/evento) 
+ 
+===== I2-01 Evento con resenas: evt-101 ===== 
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 320
+ETag: W/"140-VOkDw+OahFj5Qk63/cl3q9ZXXoc"
+Date: Wed, 04 Nov 2026 12:15:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id_evento":"evt-101","promedio":4.5,"total_resenas":2,"resenas":[{"usuario_id":"1","calificacion":5,"fecha":"2026-09-08T18:30:00.000Z","comentario":"Excelente organizacion y contenido."},{"usuario_id":"2","calificacion":4,"fecha":"2026-09-05T12:00:00.000Z","comentario":"Muy buena experiencia, aunque inicio tarde."}]} 
+ 
+===== I2-02 Evento sin resenas: evt-103 ===== 
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 70
+ETag: W/"46-dmNKxoTbYSUK0C9iwuKNSLLUNfM"
+Date: Wed, 04 Nov 2026 12:15:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id_evento":"evt-103","promedio":null,"total_resenas":0,"resenas":[]} 
+ 
+===== I2-03 Error, formato de id invalido: 1 ===== 
+HTTP/1.1 400 Bad Request
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 50
+ETag: W/"32-iaqBkW9GwVHu+3/BeVqTiYisMI8"
+Date: Wed, 04 Nov 2026 12:15:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"error":"eventoId debe usar el formato evt-{id}"} 
+ 
+===== I2-04 Evento desconocido para Resenas: evt-999 ===== 
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 70
+ETag: W/"46-R854xh4Rd3g6SJSX6B69gqzLSFU"
+Date: Wed, 04 Nov 2026 12:15:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id_evento":"evt-999","promedio":null,"total_resenas":0,"resenas":[]}

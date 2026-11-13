@@ -1,0 +1,325 @@
+openapi: 3.0.3
+info:
+  title: Resenas API - Review Reporting and Deletion
+  version: 1.0.0
+  description: |
+    API para gestión de reportes y eliminación de reseñas en la plataforma de eventos.
+    Permite a los organizadores reportar reseñas falsas, injustas u ofensivas y eliminarlas si es necesario.
+servers:
+  - url: http://localhost:5000/api/resenas
+    description: Servidor de desarrollo local
+  - url: http://localhost:3000/api/v1/resenas
+    description: API Gateway (v1)
+paths:
+  /{idResena}/reportes:
+    post:
+      summary: Reportar una reseña
+      description: |
+        Permite al organizador de un evento reportar una reseña indicando el motivo.
+        Solo el organizador del evento puede reportar reseñas de su evento.
+        Una reseña solo puede ser reportada una vez.
+      operationId: reportarResena
+      tags:
+        - Reportes
+      parameters:
+        - name: idResena
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID numérico de la reseña a reportar
+          example: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - motivo
+                - id_usuario
+              properties:
+                motivo:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: Motivo del reporte (falsa, injusta, ofensiva, etc.)
+                  example: "Contenido ofensivo e inapropiado"
+                id_usuario:
+                  type: integer
+                  minimum: 1
+                  description: ID del organizador autenticado (obtenido del token JWT)
+                  example: 1
+      responses:
+        '201':
+          description: Reporte creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id_reporte:
+                    type: integer
+                    example: 2
+                  num_resena:
+                    type: integer
+                    example: 2
+                  id_evento:
+                    type: string
+                    example: "evt-101"
+                  id_organizador:
+                    type: integer
+                    example: 1
+                  motivo:
+                    type: string
+                    example: "Contenido ofensivo e inapropiado"
+                  fecha_reporte:
+                    type: string
+                    format: date-time
+                    example: "2026-09-10T10:00:00.000Z"
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "motivo es obligatorio y debe ser texto"
+        '403':
+          description: No autorizado - El usuario no es el organizador del evento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Solo el organizador del evento puede reportar reseñas"
+        '404':
+          description: Reseña no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Reseña no encontrada"
+        '409':
+          description: Conflicto - La reseña ya ha sido reportada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Esta reseña ya ha sido reportada"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+
+  /{idResena}:
+    delete:
+      summary: Eliminar una reseña reportada
+      description: |
+        Permite al organizador eliminar una reseña que haya sido reportada previamente.
+        Requisitos:
+        - El usuario debe ser el organizador del evento
+        - La reseña debe pertenecer al evento indicado
+        - La reseña debe tener un reporte previo
+        Tras la eliminación, se recalcula el promedio de calificaciones del evento.
+      operationId: eliminarResenaReportada
+      tags:
+        - Reportes
+      parameters:
+        - name: idResena
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: ID numérico de la reseña a eliminar
+          example: 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_usuario
+                - id_evento
+              properties:
+                id_usuario:
+                  type: integer
+                  minimum: 1
+                  description: ID del organizador autenticado (obtenido del token JWT)
+                  example: 1
+                id_evento:
+                  type: string
+                  pattern: '^evt-[a-zA-Z0-9_-]{1,64}$'
+                  description: ID del evento al que pertenece la reseña
+                  example: "evt-101"
+      responses:
+        '200':
+          description: Reseña eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: "Reseña eliminada correctamente"
+                  num_resena:
+                    type: integer
+                    example: 2
+                  promedio_actualizado:
+                    type: number
+                    format: float
+                    description: Nuevo promedio de calificaciones del evento tras la eliminación
+                    example: 5
+        '400':
+          description: Solicitud inválida - La reseña no ha sido reportada o faltan datos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Solo se puede eliminar una reseña que haya sido reportada previamente"
+        '403':
+          description: No autorizado - El usuario no es el organizador del evento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Solo el organizador del evento puede eliminar reseñas"
+        '404':
+          description: Reseña no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Reseña no encontrada"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error interno del servidor"
+
+components:
+  schemas:
+    ReporteResena:
+      type: object
+      properties:
+        id_reporte:
+          type: integer
+          description: Identificador único del reporte
+        num_resena:
+          type: integer
+          description: ID de la reseña reportada
+        id_evento:
+          type: string
+          description: ID del evento
+        id_organizador:
+          type: integer
+          description: ID del organizador que reportó
+        motivo:
+          type: string
+          maxLength: 500
+          description: Motivo del reporte
+        fecha_reporte:
+          type: string
+          format: date-time
+          description: Fecha y hora del reporte
+      required:
+        - id_reporte
+        - num_resena
+        - id_evento
+        - id_organizador
+        - motivo
+        - fecha_reporte
+
+    ReporteResenaInput:
+      type: object
+      required:
+        - motivo
+        - id_usuario
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Motivo del reporte
+        id_usuario:
+          type: integer
+          minimum: 1
+          description: ID del organizador autenticado
+
+    EliminarResenaInput:
+      type: object
+      required:
+        - id_usuario
+        - id_evento
+      properties:
+        id_usuario:
+          type: integer
+          minimum: 1
+          description: ID del organizador autenticado
+        id_evento:
+          type: string
+          pattern: '^evt-[a-zA-Z0-9_-]{1,64}$'
+          description: ID del evento
+
+    EliminarResenaResponse:
+      type: object
+      properties:
+        mensaje:
+          type: string
+        num_resena:
+          type: integer
+        promedio_actualizado:
+          type: number
+          format: float
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al iniciar sesión
+
+security:
+  - bearerAuth: []

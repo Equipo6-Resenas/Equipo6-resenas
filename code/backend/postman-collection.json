@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "Resenas API - Review Reporting and Deletion",
+    "description": "Postman collection for testing review reporting and deletion endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/resenas",
+      "type": "string"
+    },
+    {
+      "key": "organizerId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "otherOrganizerId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "evt-101",
+      "type": "string"
+    },
+    {
+      "key": "reviewId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "unreportedReviewId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Report a Review",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{reviewId}}/reportes",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{reviewId}}", "reportes"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"motivo\": \"Contenido ofensivo e inapropiado\",\n  \"id_usuario\": {{organizerId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [
+        {
+          "name": "Success - 201",
+          "originalRequest": {},
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"id_reporte\": 2,\n  \"num_resena\": 2,\n  \"id_evento\": \"evt-101\",\n  \"id_organizador\": 1,\n  \"motivo\": \"Contenido ofensivo e inapropiado\",\n  \"fecha_reporte\": \"2026-09-10T10:00:00.000Z\"\n}"
+        },
+        {
+          "name": "Error - 403 Organizer of other event",
+          "originalRequest": {},
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Solo el organizador del evento puede reportar reseñas\"\n}"
+        },
+        {
+          "name": "Error - 409 Already reported",
+          "originalRequest": {},
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Esta reseña ya ha sido reportada\"\n}"
+        },
+        {
+          "name": "Error - 400 Missing motivo",
+          "originalRequest": {},
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"motivo es obligatorio y debe ser texto\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Delete a Reported Review",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{reviewId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{reviewId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_usuario\": {{organizerId}},\n  \"id_evento\": \"{{eventId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [
+        {
+          "name": "Success - 200",
+          "originalRequest": {},
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"mensaje\": \"Reseña eliminada correctamente\",\n  \"num_resena\": 2,\n  \"promedio_actualizado\": 5\n}"
+        },
+        {
+          "name": "Error - 403 Organizer of other event",
+          "originalRequest": {},
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Solo el organizador del evento puede eliminar reseñas\"\n}"
+        },
+        {
+          "name": "Error - 400 Review not reported",
+          "originalRequest": {},
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Solo se puede eliminar una reseña que haya sido reportada previamente\"\n}"
+        },
+        {
+          "name": "Error - 404 Review not found",
+          "originalRequest": {},
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Reseña no encontrada\"\n}"
+        },
+        {
+          "name": "Error - 400 Missing id_evento",
+          "originalRequest": {},
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"id_evento es obligatorio\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Attempt to Delete Unreported Review",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/{{unreportedReviewId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{unreportedReviewId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_usuario\": {{organizerId}},\n  \"id_evento\": \"{{eventId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [
+        {
+          "name": "Error - 400 Review not reported",
+          "originalRequest": {},
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Solo se puede eliminar una reseña que haya sido reportada previamente\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Reviews for Event (Verify Deletion)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/evento/{{eventId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["evento", "{{eventId}}"]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - 200",
+          "originalRequest": {},
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"id_evento\": \"evt-101\",\n  \"promedio\": 5,\n  \"total_resenas\": 1,\n  \"resenas\": [\n    {\n      \"usuario_id\": \"1\",\n      \"calificacion\": 5,\n      \"fecha\": \"2026-09-08T18:30:00.000Z\",\n      \"comentario\": \"Excelente organizacion y contenido.\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Event Average (Verify Recalculation)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/promedio?id_evento={{eventId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["promedio"],
+          "query": [
+            {
+              "key": "id_evento",
+              "value": "{{eventId}}"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success - 200",
+          "originalRequest": {},
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"promedio\": 5\n}"
+        }
+      ]
+    }
+  ]
+}
