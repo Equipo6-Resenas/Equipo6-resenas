@@ -1,0 +1,185 @@
+const { query } = require('../config/db');
+
+const SELECT_RESENAS = `
+    SELECT r.num_resena,
+           r.id_usuario,
+           r.id_evento,
+           r.clasificacion,
+           r.descripcion,
+           r.imagen_url,
+           r.fecha_reseña,
+           u.nombre AS nombre_usuario,
+           e.nombre_evento AS nombre_evento,
+           r.respuesta_texto,
+           r.respuesta_fecha,
+           ru.nombre AS nombre_responsable
+    FROM resenas r
+    JOIN usuarios u ON u.id = r.id_usuario
+    JOIN eventos  e ON e.id_evento = r.id_evento
+    LEFT JOIN usuarios ru ON ru.id = r.respuesta_id_usuario
+`;
+
+const crearResena = async ({ id_usuario, id_evento, clasificacion, descripcion, imagen_url }) => {
+  const { rows } = await query(
+    `INSERT INTO resenas (id_usuario, id_evento, clasificacion, descripcion, imagen_url)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING num_resena, id_usuario, id_evento, clasificacion, descripcion, imagen_url, fecha_reseña`,
+    [id_usuario, id_evento, clasificacion, descripcion, imagen_url || null]
+  );
+  return rows[0];
+};
+
+const listarResenas = async (filtros = {}, orden = 'fecha_reseña DESC') => {
+  const condiciones = [];
+  const valores = [];
+
+  const agregarFiltro = (columna, valor) => {
+    valores.push(valor);
+    condiciones.push(`${columna} = $${valores.length}`);
+  };
+
+  if (filtros.id_usuario !== undefined) agregarFiltro('r.id_usuario', filtros.id_usuario);
+  if (filtros.id_evento !== undefined) agregarFiltro('r.id_evento', filtros.id_evento);
+  if (filtros.clasificacion !== undefined) agregarFiltro('r.clasificacion', filtros.clasificacion);
+
+  const where = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+  const { rows } = await query(
+    `${SELECT_RESENAS} ${where} ORDER BY ${orden}`,
+    valores
+  );
+  return rows;
+};
+
+const obtenerPromedioPorEvento = async (idEvento) => {
+  const { rows } = await query(
+    `SELECT COALESCE(AVG(clasificacion), 0) AS promedio
+     FROM resenas
+     WHERE id_evento = $1`,
+    [idEvento]
+  );
+  return parseFloat(rows[0].promedio);
+};
+
+const obtenerResumenPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
+  const { rows: estadisticas } = await query(
+    `SELECT COUNT(*)::int AS total,
+            AVG(clasificacion) AS promedio
+     FROM resenas
+     WHERE id_evento = $1`,
+    [idEvento]
+  );
+
+  const offset = (pagina - 1) * tamano;
+  const { rows } = await query(
+    `SELECT r.num_resena,
+            r.id_usuario,
+            r.clasificacion,
+            r.descripcion,
+            r.imagen_url,
+            r.fecha_reseña
+     FROM resenas r
+     WHERE r.id_evento = $1
+     ORDER BY r.fecha_reseña DESC, r.num_resena DESC
+     LIMIT $2 OFFSET $3`,
+    [idEvento, tamano, offset]
+  );
+
+  const total = estadisticas[0].total;
+  const promedio = estadisticas[0].promedio === null
+    ? null
+    : Math.round(Number(estadisticas[0].promedio) * 10) / 10;
+
+  return { total, promedio, resenas: rows };
+};
+
+const obtenerResenaPorId = async (idResena) => {
+  const { rows } = await query(
+    `${SELECT_RESENAS} WHERE r.num_resena = $1`,
+    [idResena]
+  );
+  return rows[0] || null;
+};
+
+const actualizarRespuesta = async ({ idResena, textoRespuesta, idUsuarioResponsable }) => {
+  const { rows } = await query(
+    `UPDATE resenas
+     SET respuesta_texto = $1,
+         respuesta_fecha = CURRENT_TIMESTAMP,
+         respuesta_id_usuario = $2
+     WHERE num_resena = $3
+     RETURNING num_resena, respuesta_texto, respuesta_fecha, respuesta_id_usuario`,
+    [textoRespuesta, idUsuarioResponsable, idResena]
+  );
+  return rows[0];
+};
+
+const obtenerCalificacionesBasicas = async (ids) => {
+  const { rows } = await query(
+    `SELECT id_evento, COUNT(*)::int AS total, AVG(clasificacion) AS promedio
+     FROM resenas WHERE id_evento = ANY($1) GROUP BY id_evento`, [ids]);
+  return rows;
+};
+
+// --- New methods for reporting and deleting reviews ---
+
+const crearReporteResena = async ({ num_resena, id_evento, id_organizador, motivo }) => {
+  const { rows } = await query(
+    `INSERT INTO reportes_resenas (num_resena, id_evento, id_organizador, motivo)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id_reporte, num_resena, id_evento, id_organizador, motivo, fecha_reporte`,
+    [num_resena, id_evento, id_organizador, motivo]
+  );
+  return rows[0];
+};
+
+const obtenerReportePorResena = async (num_resena) => {
+  const { rows } = await query(
+    `SELECT id_reporte, num_resena, id_evento, id_organizador, motivo, fecha_reporte
+     FROM reportes_resenas
+     WHERE num_resena = $1`,
+    [num_resena]
+  );
+  return rows[0] || null;
+};
+
+const eliminarResena = async (num_resena) => {
+  const { rows } = await query(
+    `DELETE FROM resenas WHERE num_resena = $1 RETURNING num_resena`,
+    [num_resena]
+  );
+  return rows[0] || null;
+};
+
+const obtenerReporteResena = async (num_resena) => {
+  const { rows } = await query(
+    `SELECT id_reporte, num_resena, id_evento, id_organizador, motivo, fecha_reporte
+     FROM reportes_resenas
+     WHERE num_resena = $1`,
+    [num_resena]
+  );
+  return rows[0] || null;
+};
+
+const actualizarImagenResena = async (num_resena, imagen_url) => {
+  const { rows } = await query(
+    `UPDATE resenas SET imagen_url = $1 WHERE num_resena = $2 RETURNING num_resena, imagen_url`,
+    [imagen_url, num_resena]
+  );
+  return rows[0] || null;
+};
+
+module.exports = {
+  crearResena,
+  listarResenas,
+  obtenerPromedioPorEvento,
+  obtenerResumenPorEvento,
+  obtenerResenaPorId,
+  actualizarRespuesta,
+  obtenerCalificacionesBasicas,
+  crearReporteResena,
+  obtenerReportePorResena,
+  eliminarResena,
+  obtenerReporteResena,
+  actualizarImagenResena
+};

@@ -1,0 +1,11 @@
+04-11-2026  8:10:09,10 
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: application/json; charset=utf-8
+Content-Length: 320
+ETag: W/"140-A8ttqqouEHKI2BA0bJlUjDy9IhQ"
+Date: Wed, 04 Nov 2026 11:10:15 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"id_evento":"evt-101","promedio":4.5,"total_resenas":2,"resenas":[{"usuario_id":"1","calificacion":5,"fecha":"2026-09-08T21:30:00.000Z","comentario":"Excelente organizacion y contenido."},{"usuario_id":"2","calificacion":4,"fecha":"2026-09-05T16:00:00.000Z","comentario":"Muy buena experiencia, aunque inicio tarde."}]}

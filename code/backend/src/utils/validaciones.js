@@ -1,0 +1,106 @@
+const validarCrearResena = (datos) => {
+  const errores = [];
+
+  if (!datos.id_usuario || typeof datos.id_usuario !== 'number') {
+    errores.push('id_usuario es obligatorio y debe ser un numero entero');
+  }
+
+  if (typeof datos.id_evento !== 'string' || !/^evt-[a-zA-Z0-9_-]{1,64}$/.test(datos.id_evento)) {
+    errores.push('id_evento es obligatorio y debe usar el formato evt-{id}');
+  }
+
+  if (!datos.clasificacion || typeof datos.clasificacion !== 'number' ||
+      datos.clasificacion < 1 || datos.clasificacion > 5) {
+    errores.push('clasificacion es obligatoria y debe estar entre 1 y 5');
+  }
+
+  if (datos.descripcion !== undefined && datos.descripcion !== null) {
+    if (typeof datos.descripcion !== 'string') {
+      errores.push('descripcion debe ser texto');
+    } else if (datos.descripcion.length > 1000) {
+      errores.push('descripcion no puede superar los 1000 caracteres');
+    }
+  }
+
+  if (errores.length > 0) {
+    const error = new Error(errores.join(', '));
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+const normalizarDescripcion = (descripcion) => {
+  if (descripcion === undefined || descripcion === null) return null;
+  const limpia = String(descripcion).trim();
+  return limpia.length === 0 ? null : limpia;
+};
+
+// --- New validation functions for reporting and deleting reviews ---
+
+const validarReporteResena = (datos) => {
+  const errores = [];
+
+  if (!datos.motivo || typeof datos.motivo !== 'string' || datos.motivo.trim() === '') {
+    errores.push('motivo es obligatorio y debe ser texto');
+  } else if (datos.motivo.length > 500) {
+    errores.push('motivo no puede superar los 500 caracteres');
+  }
+
+  if (errores.length > 0) {
+    const error = new Error(errores.join(', '));
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+const validarEliminarResena = (datos) => {
+  const errores = [];
+
+  if (!datos.num_resena || typeof datos.num_resena !== 'number') {
+    errores.push('num_resena es obligatorio y debe ser un número');
+  }
+
+  if (!datos.id_evento || typeof datos.id_evento !== 'string') {
+    errores.push('id_evento es obligatorio');
+  }
+
+  if (errores.length > 0) {
+    const error = new Error(errores.join(', '));
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+const validarImagenResena = (file) => {
+  const errores = [];
+
+  if (!file) {
+    return; // Imagen es opcional
+  }
+
+  const tiposPermitidos = ['image/jpeg', 'image/png'];
+  const maxSizeMB = 5;
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
+  if (!tiposPermitidos.includes(file.mimetype)) {
+    errores.push(`Formato de imagen no permitido. Formatos aceptados: JPG, PNG`);
+  }
+
+  if (file.size > maxSizeBytes) {
+    errores.push(`El archivo supera el tamaño máximo permitido de ${maxSizeMB}MB`);
+  }
+
+  if (errores.length > 0) {
+    const error = new Error(errores.join(', '));
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+module.exports = {
+  validarCrearResena,
+  normalizarDescripcion,
+  validarReporteResena,
+  validarEliminarResena,
+  validarImagenResena
+};

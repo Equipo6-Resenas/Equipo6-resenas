@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "I1 - Reseñas consume datos del evento desde Catálogo",
+    "description": "Integración I1 (tipo A, servicio consumido). Al crear una reseña, el backend valida el evento llamando a GET /api/catalogo/eventos/{id}/info-servicio de Catálogo. IMPORTANTE: I1-01 solo se puede ejecutar contra el Catálogo REAL levantado y con un evento que exista en su base. I1-02 solo aplica mientras Catálogo no está disponible. Cada usuario puede reseñar un evento una sola vez (si se repite responde 409).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "I1-01 Éxito: crear reseña con evento validado en Catálogo",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_usuario\": 1,\n  \"id_evento\": \"{{eventoCatalogo}}\",\n  \"clasificacion\": 4,\n  \"descripcion\": \"Prueba integracion I1\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/resenas",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "resenas"]
+        },
+        "description": "Requiere Catálogo real arriba. Resultado esperado: 201 y la respuesta incluye el nombre del evento que entregó Catálogo."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('Incluye el nombre del evento entregado por Catálogo', () => {",
+              "  pm.expect(body.nombre_evento).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.test('Guarda la calificación enviada', () => pm.expect(body.clasificacion).to.eql(4));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "I1-02 Error: Catálogo no disponible",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_usuario\": 1,\n  \"id_evento\": \"{{eventoCatalogo}}\",\n  \"clasificacion\": 4,\n  \"descripcion\": \"Prueba caida de Catalogo\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrlResenas}}/api/resenas",
+          "host": ["{{baseUrlResenas}}"],
+          "path": ["api", "resenas"]
+        },
+        "description": "Ejecutar con Catálogo apagado. Resultado esperado: 503 con mensaje comprensible; la aplicación no cae ni guarda nada."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Estado 503', () => pm.response.to.have.status(503));",
+              "pm.test('Mensaje comprensible, sin datos técnicos', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.error).to.not.include('ECONNREFUSED');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
