@@ -11,16 +11,6 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 | Bruno González Luke | bruno.gonzalez@estudiantes.uv.cl | Frontend |
 | Rodrigo Pino Araya | rodrigo.pino@estudiantes.uv.cl | Backend; Base de Datos |
 
-
-## Entrega 02
-### Responsabilidad
-| Responsable | Item/s de rúbrica | Rol |
-|---|---|---|
-| Vicente Cruces Collao | BE1 | Backend (Integración) |
-| Constanza Díaz Pulgar | GE1, CA1 | Gestión; QA |
-| Bruno González Luke | UI1 | Frontend |
-| Rodrigo Pino Araya | BE1, BD1 | Backend; Base de Datos |
-
 ### Integraciones
 | Integración | Tipo (A, B o C) | Módulo contraparte | Servicio, endpoint o tópico | Contrato | Ítem en GitHub |
 |---|---|---|---|---|---|
