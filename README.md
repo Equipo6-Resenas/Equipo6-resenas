@@ -100,21 +100,6 @@ Docker se ocupa de ejecutar el backend y su base de datos en contenedores
 aislados, y de conectarlos por la red compartida; no es una dependencia del
 front. Para este contrato REST no hace falta levantar RabbitMQ.
 
-### Bloqueo pendiente del proveedor Check-in
-
-El proyecto `check-in` compartido actualmente no implementa el GET de asistencia
-de la tabla anterior. Su API ofrece validación por `id_entrada` y el endpoint
-`POST /api/checkin/eventos/{id_evento}/finalizar`, que publica un lote a
-RabbitMQ; ninguno permite a Reseñas consultar directamente una combinación de
-usuario y evento. Por seguridad, Reseñas no convierte esa ausencia en
-`asistio: true` ni usa la tabla de asistencia local como sustituto. El otro
-equipo debe implementar el GET contractual antes de habilitar la creación de
-reseñas en un ambiente integrado.
-
-El proveedor Catálogo sí ofrece `GET /api/catalogo/eventos/{id}/info-servicio`,
-que Reseñas usa para validar eventos y sincronizar el mínimo de metadatos que
-requiere su clave foránea local. Para el consumidor Catálogo, Reseñas expone
-los paths `/api/v1/resenas/...` esperados por su integración interna.
 
 ## Ejecución de implementación
 ### Comandos para **front-end**
