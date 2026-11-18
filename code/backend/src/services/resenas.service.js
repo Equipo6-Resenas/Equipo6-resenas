@@ -4,7 +4,7 @@ const eventosRepo = require('../repositories/eventos.repo');
 const resenasRepo = require('../repositories/resenas.repo');
 const catalogoService = require('./catalogo.service');
 const checkinService = require('./checkin.service');
-
+const brokerService = require('./broker.service'); // CAMBIO 1
 const verificarElegibilidadResena = async ({ id_usuario, id_evento }, correlationId) => {
   const evento = await catalogoService.obtenerEventoDelCatalogo(id_evento, correlationId);
   const usuario = await usuariosRepo.obtenerUsuarioPorId(id_usuario);
@@ -55,6 +55,8 @@ const crearResena = async (datos, correlationId) => {
     clasificacion,
     descripcion: normalizarDescripcion(descripcion)
   });
+
+  brokerService.publicarResenaCreada(nuevaResena, correlationId);
 
   return {
     ...nuevaResena,
