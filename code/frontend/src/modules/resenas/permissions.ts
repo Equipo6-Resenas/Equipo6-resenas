@@ -9,6 +9,7 @@ import type { CurrentUser, Review, ReviewEvent } from "./types";
 export type ReviewBlockReason =
   | "guest" // sin sesión
   | "organizer" // el organizador responde, no reseña
+  | "role-not-allowed"
   | "event-not-finished" // solo se reseña al finalizar el evento
   | "no-check-in" // HU1: solo asistentes con check-in confirmado
   | "already-reviewed"; // HU1: una reseña por usuario por evento
@@ -31,6 +32,12 @@ export function getReviewEligibility({
   reviews,
 }: EligibilityArgs): ReviewEligibility {
   if (!user) return { canReview: false, reason: "guest" };
+  if (user.role === "organizador") {
+    return { canReview: false, reason: "organizer" };
+  }
+  if (user.role && user.role !== "usuario") {
+    return { canReview: false, reason: "role-not-allowed" };
+  }
   if (user.id === event.organizerId) {
     return { canReview: false, reason: "organizer" };
   }
@@ -49,12 +56,13 @@ export function canReplyToReviews(
   user: CurrentUser | null,
   event: ReviewEvent,
 ): boolean {
-  return user !== null && user.id === event.organizerId;
+  return user?.role === "organizador" && user.id === event.organizerId;
 }
 
 export const BLOCK_MESSAGES: Record<ReviewBlockReason, string> = {
   guest: "Inicia sesión para dejar tu reseña.",
   organizer: "Como organizador, puedes responder las reseñas de tu evento.",
+  "role-not-allowed": "Solo las cuentas de usuario pueden dejar reseñas.",
   "event-not-finished": "Podrás reseñar este evento cuando finalice.",
   "no-check-in": "Solo pueden reseñar quienes hicieron check-in en el evento.",
   "already-reviewed":

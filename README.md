@@ -15,7 +15,7 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 
 | Integración | Tipo (A, B o C) | Módulo contraparte | Servicio, endpoint o tópico | Contrato | Ítem en GitHub |
 |---|---|---|---|---|---|
-| I1 | A | Auth | Login `POR COMPLETAR /api/auth/...` y validación de token con rol | [Contrato integración general](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20integraci%C3%B3n%20general.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
+| I1 | A | Auth | Sesión mediante cookie `jwt` e introspección interna `GET /internal/validar-sesion` | Contrato Auth | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
 | I2 | B | Catálogo | `GET /api/resenas/evento/{eventoId}` (provisto por Reseñas) | [Contrato Catálogo Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/16 |
 | I3 | C | Organizador | Evento `resena.creada` en exchange `ticketu.events` | [Contrato integración general](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20integraci%C3%B3n%20general.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/17 |
 
@@ -39,12 +39,14 @@ Reseñas consume Catálogo y Check-in desde el backend; el navegador solo llama 
 | Flujo | Endpoint utilizado |
 |---|---|
 | Reseñas → Catálogo | `GET /api/catalogo/eventos/{eventoId}/info-servicio` |
-| Reseñas → Check-in | `GET /api/checkin/asistencia?usuarioId={id}&eventoId={id}` |
+| Reseñas → Check-in | `GET /api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}` |
 | Catálogo → Reseñas | `POST /api/v1/resenas/calificaciones-basicas` |
 | Catálogo → Reseñas | `GET /api/v1/resenas/evento/{eventoId}` |
 | Front → Gateway → Reseñas | `/api/resenas/...` |
+| Reseñas → Auth | `GET /internal/validar-sesion` (privado; cookie `jwt` y `x-api-key`) |
 
 El backend envía `Accept: application/json` y `X-Correlation-Id` a los servicios externos, aplica timeout y falla de forma cerrada: si Catálogo o Check-in no responden, no se permite crear una reseña. El formulario del front consulta la elegibilidad al backend y no usa un check-in simulado.
+Las operaciones protegidas consultan la sesión con Auth por la red interna. El navegador envía la cookie HttpOnly con `credentials: "include"`; la clave interna nunca llega al frontend.
 
 ### Eventos por RabbitMQ (I3)
 
@@ -56,7 +58,7 @@ El backend publica el evento `resena.creada` en el exchange `ticketu.events` (ti
 {
   "resenaId": "21",
   "eventoId": "evt-101",
-  "usuarioId": "3",
+  "usuarioId": "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a",
   "calificacion": 5,
   "fecha": "2026-11-19T10:30:00Z"
 }
@@ -78,11 +80,14 @@ Configuración: `BROKER_URL`, `EVENT_EXCHANGE` (por defecto `ticketu.events`), `
    API_GATEWAY_DOCKER_URL=http://api-gateway:8080
    CATALOGO_SERVICE_DOCKER_URL=http://catalogo-service:3000
    CHECKIN_SERVICE_DOCKER_URL=http://api-gateway:8080/api/checkin
+   AUTH_SERVICE_DOCKER_URL=http://auth-service:10000
+   AUTH_INTERNAL_API_KEY=<configurar por canal seguro>
    BROKER_DOCKER_URL=amqp://ticketu:ticketu@rabbitmq:5672/ticketu
    EVENT_EXCHANGE=ticketu.events
    ```
 
    Los nombres deben coincidir con los aliases reales de los servicios en Docker. `API_GATEWAY_URL` permanece como `http://localhost:8080` para ejecución directa desde el host; ese `localhost` no sirve desde dentro de un contenedor.
+   `AUTH_INTERNAL_API_KEY` debe contener la clave compartida del entorno entregada por Auth. Guárdala solo en `.env`; nunca la subas a Git ni la configures en el frontend. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`.
 
 3. Levantar Reseñas:
 
@@ -94,6 +99,18 @@ Configuración: `BROKER_URL`, `EVENT_EXCHANGE` (por defecto `ticketu.events`), `
 
 4. Levantar Gateway, Catálogo, Check-in y RabbitMQ en `plataforma-eventos-net`. En el `.env` de Catálogo, configurar `RESENAS_SERVICE_URL=http://ms-resenas:3000`. El Gateway debe dirigir `/api/resenas/*` a `http://resenas-service:3000`.
 
+5. Si el volumen PostgreSQL ya existía, aplicar la migración aditiva:
+
+   ```powershell
+   docker compose exec ms-resenas npm run db:migrate:auth
+   ```
+
+   No ejecutes `npm run db:init` sobre una base existente: recrea las tablas. La columna `auth_uuid` ya viene en el esquema de bases nuevas.
+
+El Gateway debe conservar la cookie y permitir credenciales para el origen del frontend. La ruta interna de Auth se llama directamente desde el backend de Reseñas, no a través del Gateway.
+
+La copia actual de Check-in debe implementar `GET /api/checkin/asistencia` para confirmar asistencia por UUID; mientras no exista, la elegibilidad y la creación fallan de forma segura con 503. Las respuestas de organizador también requieren asociar de forma verificada el UUID de Auth con el propietario del evento; Catálogo todavía no entrega esa asociación en el contrato usado aquí.
+
 Docker se ocupa de ejecutar el backend y su base de datos en contenedores aislados, y de conectarlos por la red compartida; no es una dependencia del front.
 
 ## API Endpoints (Backend)
@@ -102,13 +119,14 @@ Docker se ocupa de ejecutar el backend y su base de datos en contenedores aislad
 
 | Método | Ruta | Descripción |
 |---|---|---|
+| GET | `/me` | Obtener el perfil validado por Auth (requiere sesión) |
 | GET | `/health` | Health check con verificación de BD |
-| GET | `/eligibilidad` | Verificar si un usuario puede reseñar un evento |
-| POST | `/` | Crear una reseña (requiere token válido) |
+| GET | `/eligibilidad` | Verificar si la sesión puede reseñar un evento |
+| POST | `/` | Crear una reseña (requiere sesión Auth y asistencia confirmada) |
 | GET | `/` | Listar reseñas con filtros opcionales |
 | GET | `/promedio` | Obtener promedio de calificaciones de un evento |
 | GET | `/evento/:eventoId` | Obtener reseñas y promedio de un evento (paginado) |
-| POST | `/:idResena/respuestas` | Crear respuesta a una reseña (rol organizador) |
+| POST | `/:idResena/respuestas` | Crear respuesta (sesión Auth de organizador y propiedad validada) |
 
 ### `/api/v1/resenas` (Rutas para Catálogo)
 
@@ -134,7 +152,7 @@ Docker se ocupa de ejecutar el backend y su base de datos en contenedores aislad
 1. Ingresar a directorio correspondiente al back-end: `cd code/backend`
 2. Instalar dependencias: `npm install`
 3. Crear el archivo `.env` a partir de `.env.example` y configurar PostgreSQL. Asegurarse de que exista la base `resenas`; `FRONTEND_ORIGIN` debe ser `http://localhost:3000`.
-4. Ingresar los datos previos de pruebas a la base de datos: `npm run db:init`
+4. Inicializar y sembrar solo una base nueva: `npm run db:init`. Para una base existente, aplicar `npm run db:migrate:auth` y no volver a ejecutar `db:init`.
 5. Recargar los datos iniciales (opcional): `npm run db:seed`
 6. Lanzar dependencias: `npm start`
 **La API estará levantada en el puerto 5000**
@@ -204,6 +222,9 @@ Equipo6-resenas/
 | `CATALOGO_SERVICE_URL` | URL servicio Catálogo | `http://localhost:8080/api/catalogo` |
 | `CHECKIN_SERVICE_URL` | URL servicio Check-in | `http://localhost:8080/api/checkin` |
 | `API_GATEWAY_URL` | URL API Gateway | `http://localhost:8080` |
+| `AUTH_SERVICE_URL` | URL interna de Auth | `http://localhost:10000` |
+| `AUTH_INTERNAL_API_KEY` | Secreto para la introspección servidor-a-servidor | (configurar localmente; no subir a Git) |
+| `AUTH_TIMEOUT_MS` | Timeout de introspección Auth | `1000` |
 | `BROKER_URL` | URL RabbitMQ | `amqp://ticketu:ticketu@localhost:5672/ticketu` |
 | `EVENT_EXCHANGE` | Exchange RabbitMQ | `ticketu.events` |
 | `SERVICE_TO_SERVICE_TOKEN` | Token servicio a servicio | (opcional) |
@@ -218,5 +239,7 @@ Equipo6-resenas/
 - ✅ Integración Check-in: Verificación de elegibilidad implementada
 - ✅ RabbitMQ (I3): Publicador `resena.creada` con reintentos y logging
 - ✅ Frontend: Módulo reseñas con componentes (HU1: calificar/comentar, HU4: respuesta organizador)
-- ⚠️ Auth (I1): Middleware de autenticación **pendiente** (ver INTEGRACIONES.md)
+- ✅ Auth (I1): Sesión verificada servidor-a-servidor; identidad obtenida desde Auth
+- ⚠️ Check-in: falta disponibilidad del endpoint de asistencia por UUID para probar la publicación de reseñas de extremo a extremo
+- ⚠️ Respuestas: pendiente el mapeo de propiedad de eventos a UUID de Auth
 - ⚠️ Acuerdo con Organizador para consumo de `resena.creada` **pendiente**

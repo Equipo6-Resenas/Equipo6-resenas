@@ -4,24 +4,32 @@ const eventosRepo = require('../repositories/eventos.repo');
 const resenasRepo = require('../repositories/resenas.repo');
 const catalogoService = require('./catalogo.service');
 const checkinService = require('./checkin.service');
-const brokerService = require('./broker.service'); // CAMBIO 1
-const verificarElegibilidadResena = async ({ id_usuario, id_evento }, correlationId) => {
-  const evento = await catalogoService.obtenerEventoDelCatalogo(id_evento, correlationId);
-  const usuario = await usuariosRepo.obtenerUsuarioPorId(id_usuario);
-  if (!usuario) {
-    const error = new Error('Usuario no encontrado');
-    error.statusCode = 404;
+const brokerService = require('./broker.service');
+
+const verificarElegibilidadResena = async ({ id_evento }, authUser, correlationId) => {
+  if (authUser.rol !== 'usuario') {
+    const error = new Error('Solo una cuenta de usuario puede crear reseñas');
+    error.statusCode = 403;
     throw error;
   }
 
+  const evento = await catalogoService.obtenerEventoDelCatalogo(id_evento, correlationId);
   const asistio = await checkinService.verificarAsistencia(
-    String(id_usuario),
+    authUser.id,
     id_evento,
     correlationId
   );
-  if (!asistio) return { puedeResenar: false, motivo: 'NO_ASISTIO', usuario, evento };
+  if (!asistio) return { puedeResenar: false, motivo: 'NO_ASISTIO', evento };
 
-  const existentes = await resenasRepo.listarResenas({ id_usuario, id_evento });
+  const usuario = await usuariosRepo.obtenerOCrearUsuarioAuth({
+    authUuid: authUser.id,
+    nombre: authUser.nombre
+  });
+
+  const existentes = await resenasRepo.listarResenas({
+    id_usuario: usuario.id,
+    id_evento
+  });
   if (existentes.length > 0) {
     return { puedeResenar: false, motivo: 'YA_RESENO', usuario, evento };
   }
@@ -29,12 +37,13 @@ const verificarElegibilidadResena = async ({ id_usuario, id_evento }, correlatio
   return { puedeResenar: true, motivo: null, usuario, evento };
 };
 
-const crearResena = async (datos, correlationId) => {
-  const { id_usuario, id_evento, clasificacion, descripcion } = datos;
+const crearResena = async (datos, authUser, correlationId) => {
   validarCrearResena(datos);
+  const { id_evento, clasificacion, descripcion } = datos;
 
   const elegibilidad = await verificarElegibilidadResena(
-    { id_usuario, id_evento },
+    { id_evento },
+    authUser,
     correlationId
   );
   if (elegibilidad.motivo === 'NO_ASISTIO') {
@@ -50,16 +59,20 @@ const crearResena = async (datos, correlationId) => {
 
   await eventosRepo.sincronizarEventoDelCatalogo(elegibilidad.evento);
   const nuevaResena = await resenasRepo.crearResena({
-    id_usuario,
+    id_usuario: elegibilidad.usuario.id,
     id_evento,
     clasificacion,
     descripcion: normalizarDescripcion(descripcion)
   });
 
-  brokerService.publicarResenaCreada(nuevaResena, correlationId);
+  brokerService.publicarResenaCreada({
+    ...nuevaResena,
+    id_usuario: authUser.id
+  }, correlationId);
 
   return {
     ...nuevaResena,
+    id_usuario: authUser.id,
     nombre_usuario: elegibilidad.usuario.nombre,
     nombre_evento: elegibilidad.evento.nombre,
     fecha_evento: elegibilidad.evento.fecha
@@ -114,11 +127,17 @@ const obtenerCalificacionesBasicas = async (idEventos) => {
   }, {});
 };
 
-const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
+const crearRespuesta = async ({ id_resena, texto }, authUser) => {
   // Validar entrada
   if (!id_resena || !texto || texto.trim() === '') {
     const error = new Error('ID de reseña y texto de respuesta son requeridos');
     error.statusCode = 400;
+    throw error;
+  }
+
+  if (authUser.rol !== 'organizador') {
+    const error = new Error('Solo el organizador del evento puede responder a las reseñas');
+    error.statusCode = 403;
     throw error;
   }
 
@@ -127,6 +146,13 @@ const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
   if (!resena) {
     const error = new Error('Reseña no encontrada');
     error.statusCode = 404;
+    throw error;
+  }
+
+  const usuarioAutenticado = await usuariosRepo.obtenerUsuarioPorAuthUuid(authUser.id);
+  if (!usuarioAutenticado) {
+    const error = new Error('La identidad del organizador no está asociada al evento');
+    error.statusCode = 403;
     throw error;
   }
 
@@ -139,7 +165,7 @@ const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
   }
 
   // Verificar que el usuario autenticado sea el organizador del evento
-  if (evento.id_organizador !== idUsuarioAutenticado) {
+  if (evento.id_organizador !== usuarioAutenticado.id) {
     const error = new Error('Solo el organizador del evento puede responder a la reseña');
     error.statusCode = 403;
     throw error;
@@ -149,20 +175,16 @@ const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
   const respuestaActualizada = await resenasRepo.actualizarRespuesta({
     idResena: Number(id_resena),
     textoRespuesta: texto.trim(),
-    idUsuarioResponsable: idUsuarioAutenticado
+    idUsuarioResponsable: usuarioAutenticado.id
   });
-
-  // Obtener nombre del usuario que respondió (organizador)
-  const usuario = await usuariosRepo.obtenerUsuarioPorId(idUsuarioAutenticado);
-  const nombreResponsable = usuario ? usuario.nombre : null;
 
   return {
     id: respuestaActualizada.num_resena, // para mantener compatibilidad con la respuesta anterior
     id_resena: respuestaActualizada.num_resena,
-    id_usuario: respuestaActualizada.respuesta_id_usuario,
+    id_usuario: authUser.id,
     texto: respuestaActualizada.respuesta_texto,
     fecha_respuesta: respuestaActualizada.respuesta_fecha,
-    nombre_responsable: nombreResponsable
+    nombre_responsable: usuarioAutenticado.nombre
   };
 };
 

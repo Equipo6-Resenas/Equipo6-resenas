@@ -5,8 +5,9 @@ DROP TABLE IF EXISTS usuarios;
 
 CREATE TABLE usuarios (
     id        SERIAL PRIMARY KEY,
+    auth_uuid UUID UNIQUE,
     nombre    TEXT NOT NULL,
-    email     TEXT UNIQUE NOT NULL,
+    email     TEXT UNIQUE,
     creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

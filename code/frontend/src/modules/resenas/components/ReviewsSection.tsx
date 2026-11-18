@@ -62,7 +62,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
 
     let cancelled = false;
     setEligibilityStatus({ state: "pending" });
-    verificarElegibilidad(event.id, currentUser.id)
+    verificarElegibilidad(event.id)
       .then((result) => {
         if (!cancelled) setEligibilityStatus({ state: "loaded", result });
       })
@@ -101,7 +101,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
     setSubmittingReview(true);
     setActionError(null);
     try {
-      await addReview(currentUser, input);
+      await addReview(input);
       setJustPublishedBy(currentUser.id);
     } catch (submitError) {
       setActionError(

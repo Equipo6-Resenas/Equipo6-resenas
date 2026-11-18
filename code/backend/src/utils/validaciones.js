@@ -1,8 +1,14 @@
 const validarCrearResena = (datos) => {
   const errores = [];
 
-  if (!datos.id_usuario || typeof datos.id_usuario !== 'number') {
-    errores.push('id_usuario es obligatorio y debe ser un numero entero');
+  if (!datos || typeof datos !== 'object' || Array.isArray(datos)) {
+    const error = new Error('El cuerpo debe ser un objeto JSON');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(datos, 'id_usuario')) {
+    errores.push('id_usuario no se acepta; la identidad se obtiene de la sesión Auth');
   }
 
   if (

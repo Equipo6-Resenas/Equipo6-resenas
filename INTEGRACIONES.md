@@ -6,7 +6,7 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 
 | Integración | Tipo | Módulo contraparte | Servicio, ruta en el gateway o tópico | Cómo se evidencia | Dónde verificarlo |
 |---|---|---|---|---|---|
-| I1 | A. Autenticación | Auth | Login `POST /api/auth/login` y validación de token con rol (`Authorization: Bearer <token>`) | Funcionalidad y traza | Sección I1 |
+| I1 | A. Autenticación | Auth | Cookie `jwt` e introspección privada `GET /internal/validar-sesion` | Funcionalidad y traza | Sección I1 |
 | I2 | B. API Gateway | Catálogo de Eventos | `GET /api/resenas/evento/{eventoId}` (provisto por Reseñas) | Traza y funcionalidad | Sección I2 |
 | I3 | C. Broker | Organizador | Evento `resena.creada` en el exchange `ticketu.events` | Consola de RabbitMQ y traza | Sección I3 |
 
@@ -14,32 +14,30 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 
 ## I1. Autenticación con Auth
 
-**Contraparte:** Auth. **Rutas usadas:** `POST /api/auth/login` (login) y validación de token en cada request a `/api/resenas/*`.
+**Contraparte:** Auth. Auth gestiona el login y entrega una cookie HttpOnly `jwt`. Reseñas valida la sesión en cada solicitud protegida mediante `GET /internal/validar-sesion`, directamente por la red interna (no por el Gateway).
 
 **Cómo funciona**
-- El front inicia sesión con Auth y envía el token en `Authorization: Bearer <token>` en cada llamada a `/api/resenas/...`. El token se guarda en el navegador (localStorage/cookie según implementación de Auth).
-- El backend valida el token (firma y vencimiento) y toma `usuarioId` y **rol** del token, no del cuerpo de la petición. Middleware: `code/backend/src/middlewares/auth.middleware.js` (pendiente de implementar).
-- Roles esperados: `cliente` puede publicar reseñas; `organizador` puede responder reseñas de su evento. Otro rol recibe 403.
-- Sin token, con token inválido o vencido: 401.
-- Configuración: `AUTH_URL` (`http://api-gateway:8080/api/auth`) y `AUTH_JWT_SECRET` / `AUTH_JWKS_URL` por variables de entorno. Sin tokens fijos ni `localhost` en el código.
+- El navegador llama a Reseñas con `credentials: "include"`; el Gateway debe conservar la cookie `jwt`.
+- El backend reenvía la cookie original y `x-api-key` a `AUTH_SERVICE_URL/internal/validar-sesion`. No decodifica ni valida el JWT por su cuenta.
+- La respuesta de Auth contiene el UUID `usuario.id_usuario` y el rol normalizado (`usuario`, `organizador` o `staff`). El backend ignora cualquier identidad o rol enviado por el navegador.
+- Solo el rol `usuario` puede publicar reseñas; solo `organizador` puede responder, y el backend también valida la propiedad del evento.
+- La respuesta de Catálogo usada por Reseñas aún no aporta el UUID del propietario. Las respuestas de organizador permanecerán bloqueadas hasta acordar y cargar esa asociación verificada.
+- Sin sesión válida: 401. Si Auth no está configurado o disponible: 503. Una clave interna rechazada se trata como error de configuración y no permite la operación.
+- Configuración backend: `AUTH_SERVICE_URL` (en Docker, `http://auth-service:10000`), `AUTH_INTERNAL_API_KEY` y `AUTH_TIMEOUT_MS`. La clave se guarda solo en `.env`, nunca en Git ni en el frontend.
+- Solo `/me`, elegibilidad, creación de reseñas y respuestas requieren sesión; las lecturas públicas de reseñas permanecen públicas.
 
 **Cómo verificarlo en workstation**
-1. *Funcionalidad:* con el usuario cliente (`ana.lopez@tec.mx`), publicar una reseña; con el usuario organizador (`ana.lopez@tec.mx` — mismo usuario es organizador de evt-101/102), responderla; con un rol no permitido, la acción es rechazada (403).
-2. *Sin token (debe dar 401):*
+1. Iniciar sesión en Auth desde el frontend y consultar `/api/resenas/me`; debe devolver el UUID y rol validados por Auth.
+2. *Sin cookie de sesión (debe dar 401):*
    ```bash
    curl -i -X POST <GATEWAY_URL>/api/resenas -H "Content-Type: application/json" \
      -d '{"id_evento":"evt-101","clasificacion":5}'
    ```
-3. *Token alterado (debe dar 401):*
-   ```bash
-   curl -i -X POST <GATEWAY_URL>/api/resenas \
-     -H "Authorization: Bearer <token_valido_con_ultimo_caracter_cambiado>" \
-     -H "Content-Type: application/json" \
-     -d '{"id_evento":"evt-101","clasificacion":5}'
-   ```
-4. *Traza:* log del backend (`docker compose logs ms-resenas`) con mensaje de token rechazado/inválido y fecha y hora.
+3. Con una sesión válida, intentar publicar como rol distinto de `usuario`: debe responder 403.
+4. Verificar que la creación envía el UUID de Auth a Check-in; si Check-in aún no implementa la consulta contractual, Reseñas falla de forma segura con 503.
+5. Revisar `docker compose logs ms-resenas`; no deben aparecer cookies, JWT ni claves.
 
-> **Estado actual:** Middleware de autenticación **pendiente** (ver `code/backend/src/middlewares/`). Actualmente el backend no valida tokens; se espera que el Gateway/Auth lo hagan o que se implemente el middleware.
+La clave compartida debe entregarse por canal seguro. El endpoint interno no debe exponerse en el Gateway público. El Gateway debe reenviar la cookie y permitir credenciales para el origen del frontend.
 
 ---
 
@@ -61,7 +59,7 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 2. *Evento sin reseñas:* `curl -i "<GATEWAY_URL>/api/resenas/evento/evt-103"` → 200 con `promedio: null`, `totalResenas: 0`, `resenas: []` (según contrato consolidado, Reseñas no valida existencia del evento).
 3. *Parámetro inválido (400):* `curl -i "<GATEWAY_URL>/api/resenas/evento/evt-101?tamano=500"` → 400 con mensaje comprensible (validación en `code/backend/src/controllers/resenas.controller.js`).
 4. *Paginación:* `curl -i "<GATEWAY_URL>/api/resenas/evento/evt-101?pagina=1&tamano=1"` → 200 con 1 reseña por página.
-5. *Sin token (401):* Requiere middleware I1 implementado.
+5. Las lecturas de reseñas de I2 son públicas y no requieren una sesión Auth.
 6. *Pasa por el Gateway:* `docker compose logs -f gateway` (en el repo del Gateway) muestra `GET /api/resenas/evento/...`, y `docker compose logs ms-resenas` (en `code/backend`) muestra la misma petición con `X-Correlation-Id`, fecha y hora. En la pantalla `/catalogo/<eventoId>` de Catálogo se ven las reseñas si Catálogo ya consume el servicio.
 7. *Errores del servicio provisto:* los errores se devuelven como JSON y la aplicación no se cae (`code/backend/src/middlewares/errorHandler.js`).
 8. *Servicio caído:* si el microservicio está caído, el Gateway responde 502 controlado.
@@ -93,7 +91,7 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 {
   "resenaId": "21",
   "eventoId": "evt-101",
-  "usuarioId": "3",
+  "usuarioId": "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a",
   "calificacion": 5,
   "fecha": "2026-11-19T10:30:00Z"
 }
@@ -103,7 +101,7 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 - **Fallos:** si RabbitMQ no está disponible, la reseña se guarda igual, la aplicación no falla y el error queda en el log. Manejo en `code/backend/src/services/broker.service.js` (try/catch de conexión y publicación, con reintento de conexión automático).
 
 **Cómo verificarlo en workstation**
-1. *Acción:* con el usuario cliente, publicar una reseña en el front (o `POST /api/resenas` por el Gateway).
+1. *Acción:* con un usuario Auth de rol `usuario`, publicar una reseña en el front (o `POST /api/resenas` por el Gateway).
 2. *Traza de publicación:* en `docker compose logs ms-resenas` aparece `resena.creada publicada resenaId=<id>` con fecha y hora.
 3. *Consola del broker:* `http://<host-rabbitmq>:15672` (usuario `ticketu`, password `ticketu`), vhost `ticketu` → Exchanges → `ticketu.events` → mensajes publicados. Con una cola enlazada a `resena.*`, usar *Get messages* para ver el mensaje.
 4. *Base de datos (efecto consistente con lo publicado):*
@@ -127,7 +125,7 @@ Se declara **una integración por tipo**. Todas se ejecutan contra Auth, API Gat
 - **Falla cerrada:** Si Catálogo no responde (timeout o error), no se permite crear la reseña → 503.
 
 ### Check-in (verificación de elegibilidad)
-- **Endpoint:** `GET /api/checkin/asistencia?usuarioId={id}&eventoId={id}`
+- **Endpoint:** `GET /api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}`
 - **Uso:** Verificar que el usuario asistió al evento antes de permitir reseña (`code/backend/src/services/checkin.service.js`).
 - **Timeout:** `CHECKIN_TIMEOUT_MS=2000`.
 - **Falla cerrada:** Si Check-in no responde, no se permite crear la reseña → 503.

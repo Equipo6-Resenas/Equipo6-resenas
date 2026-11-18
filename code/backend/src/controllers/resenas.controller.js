@@ -26,21 +26,50 @@ const leerIdEventoContrato = (valor) => {
   return valor;
 };
 
+const leerIdUsuarioFiltro = (valor) => {
+  const numero = Number(valor);
+  if (Number.isSafeInteger(numero) && numero > 0) return numero;
+  if (
+    typeof valor === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(valor)
+  ) {
+    return valor;
+  }
+  const error = new Error('id_usuario debe ser un ID local positivo o un UUID de Auth');
+  error.statusCode = 400;
+  throw error;
+};
+
 const crearResena = async (req, res, next) => {
   try {
-    const nuevaResena = await resenasService.crearResena(req.body, req.correlationId);
+    const nuevaResena = await resenasService.crearResena(
+      req.body,
+      req.authUser,
+      req.correlationId
+    );
     return res.status(201).json(nuevaResena);
   } catch (error) {
     return next(error);
   }
 };
 
+const obtenerSesion = (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).json({
+    user: {
+      id: req.authUser.id,
+      name: req.authUser.nombre,
+      role: req.authUser.rol
+    }
+  });
+};
+
 const verificarElegibilidad = async (req, res, next) => {
   try {
-    const idUsuario = leerEnteroPositivo(req.query.usuarioId, 'usuarioId');
     const idEvento = leerIdEventoContrato(req.query.eventoId);
     const resultado = await resenasService.verificarElegibilidadResena(
-      { id_usuario: idUsuario, id_evento: idEvento },
+      { id_evento: idEvento },
+      req.authUser,
       req.correlationId
     );
     return res.status(200).json({
@@ -57,7 +86,7 @@ const listarResenas = async (req, res, next) => {
     const filtros = {};
 
     if (req.query.id_usuario !== undefined) {
-      filtros.id_usuario = leerEnteroPositivo(req.query.id_usuario, 'id_usuario');
+      filtros.id_usuario = leerIdUsuarioFiltro(req.query.id_usuario);
     }
     if (req.query.id_evento !== undefined) {
       filtros.id_evento = leerIdEventoContrato(req.query.id_evento);
@@ -186,7 +215,7 @@ const obtenerCalificacionesBasicas = async (req, res, next) => {
 const crearRespuesta = async (req, res, next) => {
   try {
     const { idResena } = req.params;
-    const { texto, id_usuario } = req.body;
+    const { texto } = req.body || {};
 
     if (!idResena) {
       const error = new Error('ID de reseña es requerido en la ruta');
@@ -194,12 +223,12 @@ const crearRespuesta = async (req, res, next) => {
       throw error;
     }
 
-    const datos = {
-      id_resena: Number(idResena),
-      texto: texto
-    };
+    const idResenaNumero = leerEnteroPositivo(idResena, 'idResena');
 
-    const respuesta = await resenasService.crearRespuesta(datos, Number(id_usuario));
+    const respuesta = await resenasService.crearRespuesta(
+      { id_resena: idResenaNumero, texto },
+      req.authUser
+    );
     return res.status(201).json(respuesta);
   } catch (error) {
     return next(error);
@@ -208,6 +237,7 @@ const crearRespuesta = async (req, res, next) => {
 
 module.exports = {
   crearResena,
+  obtenerSesion,
   verificarElegibilidad,
   listarResenas,
   obtenerPromedio,

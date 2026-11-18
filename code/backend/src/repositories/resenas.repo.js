@@ -2,7 +2,7 @@ const { query } = require('../config/db');
 
 const SELECT_RESENAS = `
     SELECT r.num_resena,
-           r.id_usuario,
+           COALESCE(u.auth_uuid::text, r.id_usuario::text) AS id_usuario,
            r.id_evento,
            r.clasificacion,
            r.descripcion,
@@ -37,7 +37,13 @@ const listarResenas = async (filtros = {}, orden = 'fecha_reseña DESC') => {
     condiciones.push(`${columna} = $${valores.length}`);
   };
 
-  if (filtros.id_usuario !== undefined) agregarFiltro('r.id_usuario', filtros.id_usuario);
+  if (filtros.id_usuario !== undefined) {
+    valores.push(filtros.id_usuario);
+    const columna = typeof filtros.id_usuario === 'number'
+      ? 'r.id_usuario'
+      : 'u.auth_uuid::text';
+    condiciones.push(`${columna} = $${valores.length}`);
+  }
   if (filtros.id_evento !== undefined) agregarFiltro('r.id_evento', filtros.id_evento);
   if (filtros.clasificacion !== undefined) agregarFiltro('r.clasificacion', filtros.clasificacion);
 
@@ -74,11 +80,12 @@ const obtenerResumenPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
   const offset = (pagina - 1) * tamano;
   const { rows } = await query(
     `SELECT r.num_resena,
-            r.id_usuario,
+            COALESCE(u.auth_uuid::text, r.id_usuario::text) AS id_usuario,
             r.clasificacion,
             r.descripcion,
             r.fecha_reseña
      FROM resenas r
+     JOIN usuarios u ON u.id = r.id_usuario
      WHERE r.id_evento = $1
      ORDER BY r.fecha_reseña DESC, r.num_resena DESC
      LIMIT $2 OFFSET $3`,
