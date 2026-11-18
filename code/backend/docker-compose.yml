@@ -39,7 +39,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
-      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://catalogo-service:3000}
+      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/catalogo}
       API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://api-gateway:8080}
       CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/checkin}
       CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-2000}
