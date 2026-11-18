@@ -1,9 +1,7 @@
 // ============================================================================
 // lib/env.ts
 // ----------------------------------------------------------------------------
-// La mayoría de los módulos usan el API Gateway como puerta de entrada.
-// Reseñas permite configurar una URL directa para el backend durante el
-// desarrollo local (NEXT_PUBLIC_RESENAS_API_URL).
+// El front usa el API Gateway como puerta de entrada para todos los módulos.
 //
 // El Gateway enruta los módulos integrados a sus servicios internos.
 //

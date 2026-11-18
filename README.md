@@ -42,6 +42,80 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 - Check-in
 - Catálogo de eventos
 
+## Integraciones REST y Docker
+
+Reseñas consume Catálogo y Check-in desde el backend; el navegador solo llama al
+API Gateway.
+
+| Flujo | Endpoint utilizado |
+|---|---|
+| Reseñas → Catálogo | `GET /api/catalogo/eventos/{eventoId}/info-servicio` |
+| Reseñas → Check-in | `GET /api/checkin/asistencia?usuarioId={id}&eventoId={id}` |
+| Catálogo → Reseñas | `POST /api/v1/resenas/calificaciones-basicas` |
+| Catálogo → Reseñas | `GET /api/v1/resenas/evento/{eventoId}` |
+| Front → Gateway → Reseñas | `/api/resenas/...` |
+
+El backend envía `Accept: application/json` y `X-Correlation-Id` a los servicios
+externos, aplica timeout y falla de forma cerrada: si Catálogo o Check-in no
+responden, no se permite crear una reseña. El formulario del front consulta la
+elegibilidad al backend y no usa un check-in simulado.
+
+### Ejecutar con Docker
+
+1. Crear una vez la red compartida indicada por Platform Team:
+
+   ```powershell
+   docker network create plataforma-eventos-net
+   ```
+
+2. En `code/backend`, configurar `.env` (copiar `.env.example`) con la URL
+   interna del Gateway para contenedores:
+
+   ```env
+   API_GATEWAY_DOCKER_URL=http://api-gateway:8080
+   CATALOGO_SERVICE_DOCKER_URL=http://catalogo-service:3000
+   CHECKIN_SERVICE_DOCKER_URL=http://api-gateway:8080/api/checkin
+   ```
+
+   Los nombres deben coincidir con los aliases reales de los servicios en
+   Docker. `API_GATEWAY_URL` permanece como `http://localhost:8080` para ejecución directa desde el host;
+   ese `localhost` no sirve desde dentro de un contenedor.
+
+3. Levantar Reseñas:
+
+   ```powershell
+   docker compose up --build -d
+   ```
+
+   El servicio API se publica en el host como `http://localhost:5000`, escucha
+   en el puerto interno `3000` (mapeado al `5000` del host) y se conecta a
+   Postgres por la red interna de Compose. Su alias compartido es `ms-resenas` /
+   `resenas-service`.
+
+4. Levantar Gateway, Catálogo y Check-in en `plataforma-eventos-net`. En el
+   `.env` de Catálogo, configurar `RESENAS_SERVICE_URL=http://ms-resenas:3000`.
+   El Gateway debe dirigir `/api/resenas/*` a `http://resenas-service:3000`.
+
+Docker se ocupa de ejecutar el backend y su base de datos en contenedores
+aislados, y de conectarlos por la red compartida; no es una dependencia del
+front. Para este contrato REST no hace falta levantar RabbitMQ.
+
+### Bloqueo pendiente del proveedor Check-in
+
+El proyecto `check-in` compartido actualmente no implementa el GET de asistencia
+de la tabla anterior. Su API ofrece validación por `id_entrada` y el endpoint
+`POST /api/checkin/eventos/{id_evento}/finalizar`, que publica un lote a
+RabbitMQ; ninguno permite a Reseñas consultar directamente una combinación de
+usuario y evento. Por seguridad, Reseñas no convierte esa ausencia en
+`asistio: true` ni usa la tabla de asistencia local como sustituto. El otro
+equipo debe implementar el GET contractual antes de habilitar la creación de
+reseñas en un ambiente integrado.
+
+El proveedor Catálogo sí ofrece `GET /api/catalogo/eventos/{id}/info-servicio`,
+que Reseñas usa para validar eventos y sincronizar el mínimo de metadatos que
+requiere su clave foránea local. Para el consumidor Catálogo, Reseñas expone
+los paths `/api/v1/resenas/...` esperados por su integración interna.
+
 ## Ejecución de implementación
 ### Comandos para **front-end**
 1. Ingresar a directorio correspondiente al front-end: cd code/frontend

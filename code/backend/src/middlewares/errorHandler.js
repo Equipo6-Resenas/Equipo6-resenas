@@ -22,7 +22,20 @@ const errorHandler = (err, req, res, next) => {
     console.error('Error no controlado:', err);
   }
 
-  return res.status(statusCode).json({ error: mensaje });
+  const codigo = statusCode >= 500
+    ? 'DEPENDENCY_OR_INTERNAL_ERROR'
+    : statusCode === 404
+      ? 'NOT_FOUND'
+      : statusCode === 409
+        ? 'CONFLICT'
+        : 'INVALID_REQUEST';
+
+  return res.status(statusCode).json({
+    error: mensaje,
+    codigo,
+    mensaje,
+    correlationId: req.correlationId
+  });
 };
 
 module.exports = errorHandler;

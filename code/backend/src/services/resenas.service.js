@@ -1,17 +1,12 @@
 const { validarCrearResena, normalizarDescripcion } = require('../utils/validaciones');
 const usuariosRepo = require('../repositories/usuarios.repo');
 const eventosRepo = require('../repositories/eventos.repo');
-const asistenciaRepo = require('../repositories/asistencia.repo');
 const resenasRepo = require('../repositories/resenas.repo');
 const catalogoService = require('./catalogo.service');
+const checkinService = require('./checkin.service');
 
-const crearResena = async (datos) => {
-  const { id_usuario, id_evento, clasificacion, descripcion } = datos;
-
-  validarCrearResena(datos);
-
-  await catalogoService.obtenerEventoDelCatalogo(id_evento);
-
+const verificarElegibilidadResena = async ({ id_usuario, id_evento }, correlationId) => {
+  const evento = await catalogoService.obtenerEventoDelCatalogo(id_evento, correlationId);
   const usuario = await usuariosRepo.obtenerUsuarioPorId(id_usuario);
   if (!usuario) {
     const error = new Error('Usuario no encontrado');
@@ -19,27 +14,41 @@ const crearResena = async (datos) => {
     throw error;
   }
 
-  const evento = await eventosRepo.obtenerEventoPorId(id_evento);
-  if (!evento) {
-    const error = new Error('Evento no encontrado');
-    error.statusCode = 404;
-    throw error;
+  const asistio = await checkinService.verificarAsistencia(
+    String(id_usuario),
+    id_evento,
+    correlationId
+  );
+  if (!asistio) return { puedeResenar: false, motivo: 'NO_ASISTIO', usuario, evento };
+
+  const existentes = await resenasRepo.listarResenas({ id_usuario, id_evento });
+  if (existentes.length > 0) {
+    return { puedeResenar: false, motivo: 'YA_RESENO', usuario, evento };
   }
 
-  const asistio = await asistenciaRepo.verificarAsistencia(id_usuario, id_evento);
-  if (!asistio) {
+  return { puedeResenar: true, motivo: null, usuario, evento };
+};
+
+const crearResena = async (datos, correlationId) => {
+  const { id_usuario, id_evento, clasificacion, descripcion } = datos;
+  validarCrearResena(datos);
+
+  const elegibilidad = await verificarElegibilidadResena(
+    { id_usuario, id_evento },
+    correlationId
+  );
+  if (elegibilidad.motivo === 'NO_ASISTIO') {
     const error = new Error('El usuario no asistio al evento');
     error.statusCode = 403;
     throw error;
   }
-
-  const existentes = await resenasRepo.listarResenas({ id_usuario, id_evento });
-  if (existentes.length > 0) {
+  if (elegibilidad.motivo === 'YA_RESENO') {
     const error = new Error('El usuario ya realizo una resena para este evento');
     error.statusCode = 409;
     throw error;
   }
 
+  await eventosRepo.sincronizarEventoDelCatalogo(elegibilidad.evento);
   const nuevaResena = await resenasRepo.crearResena({
     id_usuario,
     id_evento,
@@ -49,9 +58,9 @@ const crearResena = async (datos) => {
 
   return {
     ...nuevaResena,
-    nombre_usuario: usuario.nombre,
-    nombre_evento: evento.nombre_evento,
-    fecha_evento: eventoCatalogo.fecha
+    nombre_usuario: elegibilidad.usuario.nombre,
+    nombre_evento: elegibilidad.evento.nombre,
+    fecha_evento: elegibilidad.evento.fecha
   };
 };
 
@@ -68,12 +77,15 @@ const obtenerResenasPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
   const resumen = await resenasRepo.obtenerResumenPorEvento(idEvento, pagina, tamano);
 
   return {
-    id_evento: idEvento,
+    eventoId: idEvento,
     promedio: resumen.promedio,
-    total_resenas: resumen.total,
+    totalResenas: resumen.total,
+    pagina,
+    tamano,
     resenas: resumen.resenas.map((resena) => {
       const item = {
-        usuario_id: String(resena.id_usuario),
+        resenaId: String(resena.num_resena),
+        usuarioId: String(resena.id_usuario),
         calificacion: resena.clasificacion,
         fecha: new Date(resena.fecha_reseña).toISOString()
       };
@@ -81,6 +93,23 @@ const obtenerResenasPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
       return item;
     })
   };
+};
+
+const obtenerCalificacionesBasicas = async (idEventos) => {
+  const filas = await resenasRepo.obtenerCalificacionesBasicas(idEventos);
+  const calificaciones = Object.fromEntries(
+    filas.map((fila) => [
+      fila.id_evento,
+      {
+        promedio: fila.promedio === null ? null : Number(fila.promedio),
+        totalResenas: Number(fila.total)
+      }
+    ])
+  );
+  return idEventos.reduce((resultado, idEvento) => {
+    resultado[idEvento] = calificaciones[idEvento] || { promedio: null, totalResenas: 0 };
+    return resultado;
+  }, {});
 };
 
 const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
@@ -135,21 +164,12 @@ const crearRespuesta = async ({ id_resena, texto }, idUsuarioAutenticado) => {
   };
 };
 
-const obtenerCalificacionesBasicas = async (ids) => {
-  const filas = await resenasRepo.obtenerCalificacionesBasicas(ids);
-  const calificaciones = {};
-  ids.forEach((id) => { calificaciones[id] = { promedio: null, total_resenas: 0 }; });
-  filas.forEach((f) => {
-    calificaciones[f.id_evento] = { promedio: Math.round(Number(f.promedio) * 10) / 10, total_resenas: f.total };
-  });
-  return { calificaciones };
-};
-
 module.exports = {
   crearResena,
+  verificarElegibilidadResena,
   listarResenas,
   obtenerPromedioPorEvento,
   obtenerResenasPorEvento,
-  crearRespuesta,
-  obtenerCalificacionesBasicas
+  obtenerCalificacionesBasicas,
+  crearRespuesta
 };

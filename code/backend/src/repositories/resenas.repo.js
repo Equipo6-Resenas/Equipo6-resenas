@@ -52,12 +52,14 @@ const listarResenas = async (filtros = {}, orden = 'fecha_reseña DESC') => {
 
 const obtenerPromedioPorEvento = async (idEvento) => {
   const { rows } = await query(
-    `SELECT COALESCE(AVG(clasificacion), 0) AS promedio
+    `SELECT AVG(clasificacion) AS promedio
      FROM resenas
      WHERE id_evento = $1`,
     [idEvento]
   );
-  return parseFloat(rows[0].promedio);
+  return rows[0].promedio === null
+    ? null
+    : Math.round(Number(rows[0].promedio) * 10) / 10;
 };
 
 const obtenerResumenPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
@@ -89,6 +91,22 @@ const obtenerResumenPorEvento = async (idEvento, pagina = 1, tamano = 20) => {
     : Math.round(Number(estadisticas[0].promedio) * 10) / 10;
 
   return { total, promedio, resenas: rows };
+};
+
+const obtenerCalificacionesBasicas = async (idEventos) => {
+  const { rows } = await query(
+    `SELECT solicitados.id_evento,
+            CASE
+              WHEN COUNT(r.num_resena) = 0 THEN NULL
+              ELSE ROUND(AVG(r.clasificacion)::numeric, 1)
+            END AS promedio,
+            COUNT(r.num_resena)::int AS total
+     FROM unnest($1::text[]) AS solicitados(id_evento)
+     LEFT JOIN resenas r ON r.id_evento = solicitados.id_evento
+     GROUP BY solicitados.id_evento`,
+    [idEventos]
+  );
+  return rows;
 };
 
 const obtenerResenaPorId = async (idResena) => {
@@ -124,6 +142,7 @@ module.exports = {
   listarResenas,
   obtenerPromedioPorEvento,
   obtenerResumenPorEvento,
+  obtenerCalificacionesBasicas,
   obtenerResenaPorId,
   actualizarRespuesta,
   obtenerCalificacionesBasicas

@@ -1,8 +1,7 @@
 import type { NewReviewInput, Review } from "./types";
+import { GATEWAY_URL } from "@/lib/env";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_RESENAS_API_URL ?? "http://localhost:5000";
-const BASE_PATH = `${API_URL}/api/resenas`;
+const BASE_PATH = `${GATEWAY_URL}/api/resenas`;
 
 interface ApiReview {
   num_resena: number;
@@ -31,6 +30,10 @@ function numericId(value: string, field: string): number {
     throw new Error(`${field} debe ser un número entero positivo.`);
   }
   return id;
+}
+
+function validEventId(value: string): boolean {
+  return value.length > 0 && value.trim() === value && value.length <= 64;
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -66,8 +69,8 @@ function mapReview(review: ApiReview): Review {
 }
 
 export async function obtenerResenasDeEvento(eventoId: string): Promise<Review[]> {
-  if (!/^evt-[a-zA-Z0-9_-]{1,64}$/.test(eventoId)) {
-    throw new Error("El ID del evento debe usar el formato evt-{id}.");
+  if (!validEventId(eventoId)) {
+    throw new Error("El ID del evento debe tener entre 1 y 64 caracteres.");
   }
   const response = await fetch(`${BASE_PATH}?id_evento=${encodeURIComponent(eventoId)}`);
   const reviews = await parseResponse<ApiReview[]>(response);
@@ -79,8 +82,8 @@ export async function crearResena(
   userId: string,
   input: NewReviewInput,
 ): Promise<Review> {
-  if (!/^evt-[a-zA-Z0-9_-]{1,64}$/.test(eventoId)) {
-    throw new Error("El ID del evento debe usar el formato evt-{id}.");
+  if (!validEventId(eventoId)) {
+    throw new Error("El ID del evento debe tener entre 1 y 64 caracteres.");
   }
   const response = await fetch(BASE_PATH, {
     method: "POST",
@@ -94,6 +97,40 @@ export async function crearResena(
   });
   const review = await parseResponse<ApiReview>(response);
   return mapReview(review);
+}
+
+export interface ReviewEligibilityResult {
+  puedeResenar: boolean;
+  motivo: "NO_ASISTIO" | "YA_RESENO" | null;
+}
+
+export async function verificarElegibilidad(
+  eventoId: string,
+  userId: string,
+): Promise<ReviewEligibilityResult> {
+  if (!validEventId(eventoId)) {
+    throw new Error("El ID del evento debe tener entre 1 y 64 caracteres.");
+  }
+  const usuarioId = numericId(userId, "El ID del usuario");
+  const params = new URLSearchParams({
+    usuarioId: String(usuarioId),
+    eventoId,
+  });
+  const response = await fetch(`${BASE_PATH}/eligibilidad?${params.toString()}`);
+  const result = await parseResponse<ReviewEligibilityResult>(response);
+  if (
+    !result ||
+    typeof result !== "object" ||
+    typeof result.puedeResenar !== "boolean" ||
+    (result.motivo !== null &&
+      result.motivo !== "NO_ASISTIO" &&
+      result.motivo !== "YA_RESENO") ||
+    (result.puedeResenar && result.motivo !== null) ||
+    (!result.puedeResenar && result.motivo === null)
+  ) {
+    throw new Error("La API devolvió una respuesta de elegibilidad inválida.");
+  }
+  return result;
 }
 
 export async function crearRespuesta(

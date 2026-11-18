@@ -3,6 +3,7 @@ const resenasController = require('../controllers/resenas.controller');
 
 const router = express.Router();
 
+router.get('/eligibilidad', resenasController.verificarElegibilidad);
 router.post('/', resenasController.crearResena);
 router.get('/', resenasController.listarResenas);
 

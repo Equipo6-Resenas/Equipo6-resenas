@@ -20,7 +20,7 @@ export type ReviewEligibility =
 interface EligibilityArgs {
   event: ReviewEvent;
   user: CurrentUser | null;
-  hasCheckIn: boolean;
+  hasCheckIn: boolean | null;
   reviews: Review[];
 }
 
@@ -37,7 +37,7 @@ export function getReviewEligibility({
   if (event.status !== "finalizado") {
     return { canReview: false, reason: "event-not-finished" };
   }
-  if (!hasCheckIn) return { canReview: false, reason: "no-check-in" };
+  if (hasCheckIn === false) return { canReview: false, reason: "no-check-in" };
   if (reviews.some((r) => r.userId === user.id)) {
     return { canReview: false, reason: "already-reviewed" };
   }

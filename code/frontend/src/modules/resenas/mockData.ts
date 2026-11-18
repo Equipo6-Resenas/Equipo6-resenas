@@ -2,8 +2,8 @@ import expoUvImage from "./assets/expo-uv-2026.png";
 import type { CurrentUser, ReviewEvent } from "./types";
 
 /**
- * El evento, el usuario y el check-in siguen siendo simulados para la interfaz.
- * La lista y escritura de reseñas ya usan el backend de este módulo.
+ * El evento y el usuario siguen simulados para la interfaz. La asistencia se
+ * verifica contra Check-in antes de habilitar el formulario.
  */
 
 export const MOCK_EVENT: ReviewEvent = {
@@ -32,9 +32,3 @@ export const SIMULATED_USERS: SimulatedUser[] = [
   { key: "organizer", label: "Organizador del evento", user: { id: "1", name: "Ana Lopez" } },
   { key: "guest", label: "Visitante (sin sesión)", user: null },
 ];
-
-const CHECKED_IN_USER_IDS = new Set(["1", "2"]);
-
-export function hasCheckIn(userId: string): boolean {
-  return CHECKED_IN_USER_IDS.has(userId);
-}
