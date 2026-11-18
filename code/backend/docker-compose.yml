@@ -1,4 +1,23 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ticketu
+      RABBITMQ_DEFAULT_PASS: ticketu
+      RABBITMQ_DEFAULT_VHOST: ticketu
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - plataforma-eventos-net
+
   postgres-resenas:
     image: postgres:16-alpine
     container_name: postgres-resenas
@@ -8,7 +27,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT_PUBLISHED:-5433}:5432"
+      - "${DB_PORT_PUBLISHED:-5433}:5433"
     volumes:
       - resenas-postgres-data:/var/lib/postgresql/data
       - ./src/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
@@ -21,6 +40,7 @@ services:
         ]
       interval: 5s
       timeout: 5s
+      
       retries: 20
     networks:
       plataforma-eventos-net:
@@ -34,7 +54,7 @@ services:
     environment:
       PORT: ${PORT:-3000}
       DB_HOST: postgres-resenas
-      DB_PORT: 5432
+      DB_PORT: 5433
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
@@ -45,12 +65,14 @@ services:
       CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-2000}
       CHECKIN_TIMEOUT_MS: ${CHECKIN_TIMEOUT_MS:-2000}
       SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN:-}
-      BROKER_URL: ${BROKER_DOCKER_URL:-}
-      EVENT_EXCHANGE: ${EVENT_EXCHANGE:-ticketu.events}
+      BROKER_URL: amqp://ticketu:ticketu@rabbitmq:5672/ticketu
+      EVENT_EXCHANGE: ticketu.events
     ports:
       - "5000:3000"
     depends_on:
       postgres-resenas:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       plataforma-eventos-net:
