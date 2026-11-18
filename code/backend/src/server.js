@@ -4,6 +4,7 @@ const resenasRoutes = require('./routes/resenas.routes');
 const resenasV1Routes = require('./routes/resenas.v1.routes');
 const errorHandler = require('./middlewares/errorHandler');
 const { verificarConexion, cerrarPool } = require('./config/db');
+const { iniciarBroker, cerrarBroker } = require('./services/broker.service'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,11 +54,13 @@ const servidor = app.listen(PORT, () => {
   console.log(`  POST /api/resenas`);
   console.log(`  GET  /api/v1/resenas/evento/:eventoId`);
   console.log(`  POST /api/v1/resenas/calificaciones-basicas`);
+  iniciarBroker(); 
 });
 
 const apagar = async (senal) => {
   console.log(`\n${senal} recibido, cerrando...`);
   servidor.close(async () => {
+    await cerrarBroker(); 
     await cerrarPool();
     console.log('Conexiones cerradas.');
     process.exit(0);

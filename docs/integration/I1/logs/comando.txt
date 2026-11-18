@@ -1,1 +1,0 @@
-npm start 2>&1 | Tee-Object -FilePath ..\..\docs\integration\I1\logs\2026-11-04_backend.txt
