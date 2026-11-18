@@ -1,0 +1,48 @@
+SET
+        fecha_consulta         
+-------------------------------
+ 2026-11-04 08:22:22.710967-03
+(1 row)
+
+ num_resena | id_usuario | id_evento | clasificacion |               descripcion               |    fecha_reseña     
+------------+------------+-----------+---------------+-----------------------------------------+---------------------
+          3 |          3 | evt-102   |             5 | Tema muy actualizado y ponentes claros. | 2026-09-07 15:00:00
+(1 row)
+
+     column_name      
+----------------------
+ num_resena
+ id_usuario
+ id_evento
+ clasificacion
+ descripcion
+ fecha_reseña
+ respuesta_texto
+ respuesta_fecha
+ respuesta_id_usuario
+(9 rows)
+
+SET
+        fecha_consulta         
+-------------------------------
+ 2026-11-04 08:22:22.710967-03
+(1 row)
+
+ num_resena | id_usuario | id_evento | clasificacion |               descripcion               |    fecha_reseña     
+------------+------------+-----------+---------------+-----------------------------------------+---------------------
+          3 |          3 | evt-102   |             5 | Tema muy actualizado y ponentes claros. | 2026-09-07 15:00:00
+(1 row)
+
+     column_name      
+----------------------
+ num_resena
+ id_usuario
+ id_evento
+ clasificacion
+ descripcion
+ fecha_reseña
+ respuesta_texto
+ respuesta_fecha
+ respuesta_id_usuario
+(9 rows)
+

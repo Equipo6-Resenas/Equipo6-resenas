@@ -1,0 +1,16 @@
+SET
+        fecha_consulta         
+-------------------------------
+ 2026-11-04 08:20:23.462937-03
+(1 row)
+
+ id_evento | total_antes 
+-----------+-------------
+ evt-102   |           1
+(1 row)
+
+ num_resena | id_usuario | clasificacion |               descripcion               
+------------+------------+---------------+-----------------------------------------
+          3 |          3 |             5 | Tema muy actualizado y ponentes claros.
+(1 row)
+

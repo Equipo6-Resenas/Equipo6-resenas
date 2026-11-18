@@ -1,0 +1,1532 @@
+{
+  "collection": {
+    "item": [
+      {
+        "id": "b6eaa767-aee6-407e-af9e-5e5c28304a74",
+        "name": "I2-01 Éxito: evento con reseñas",
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200, id_evento, promedio 4.5, total_resenas 2, reseñas de la más reciente a la más antigua, campos en snake_case.",
+            "type": "text/plain"
+          },
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "{{eventoConResenas}}"
+            ],
+            "host": [
+              "{{baseUrlResenas}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "e0596371-f4ce-48c4-bd70-5e4e437625fb",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Trae id_evento, promedio, total_resenas y resenas', () => {",
+                "  pm.expect(body).to.have.property('id_evento', pm.environment.get('eventoConResenas'));",
+                "  pm.expect(body).to.have.property('promedio');",
+                "  pm.expect(body).to.have.property('total_resenas');",
+                "  pm.expect(body.resenas).to.be.an('array');",
+                "});",
+                "pm.test('Promedio 4.5 y total 2 (seed)', () => {",
+                "  pm.expect(body.promedio).to.eql(4.5);",
+                "  pm.expect(body.total_resenas).to.eql(2);",
+                "});",
+                "pm.test('total_resenas coincide con la lista', () => pm.expect(body.total_resenas).to.eql(body.resenas.length));",
+                "pm.test('Cada reseña trae usuario_id, calificacion y fecha', () => {",
+                "  body.resenas.forEach(r => {",
+                "    pm.expect(r).to.have.property('usuario_id');",
+                "    pm.expect(r.calificacion).to.be.within(1, 5);",
+                "    pm.expect(r).to.have.property('fecha');",
+                "  });",
+                "});",
+                "pm.test('Orden de más reciente a menos reciente', () => {",
+                "  const f = body.resenas.map(r => new Date(r.fecha).getTime());",
+                "  pm.expect(f).to.eql([...f].sort((a, b) => b - a));",
+                "});"
+              ],
+              "_lastExecutionId": "156fd7cb-0e5f-43cd-a781-8e111b246b56"
+            }
+          }
+        ]
+      },
+      {
+        "id": "1373c44f-2ab4-4849-a76a-0a93597bac1f",
+        "name": "I2-02 Éxito: evento sin reseñas",
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200 con promedio null, total_resenas 0 y resenas []. Nunca un error.",
+            "type": "text/plain"
+          },
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "{{eventoSinResenas}}"
+            ],
+            "host": [
+              "{{baseUrlResenas}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "eb54d103-636b-4d63-bcfa-3e11e2db7922",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Estado vacío: promedio null, total 0, lista vacía', () => {",
+                "  pm.expect(body.promedio).to.eql(null);",
+                "  pm.expect(body.total_resenas).to.eql(0);",
+                "  pm.expect(body.resenas).to.eql([]);",
+                "});"
+              ],
+              "_lastExecutionId": "7883ad21-ff7b-444f-b873-fe5d449af0bf"
+            }
+          }
+        ]
+      },
+      {
+        "id": "052597ea-be78-4cb4-a191-401a1c0d42d7",
+        "name": "I2-03 Error: id de evento con formato inválido",
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 400, el id debe tener el formato evt-{id}.",
+            "type": "text/plain"
+          },
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "1"
+            ],
+            "host": [
+              "{{baseUrlResenas}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "42edbe51-a929-4a84-98b9-daffe109568b",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                "pm.test('Informa el error', () => pm.expect(pm.response.json()).to.have.property('error'));"
+              ],
+              "_lastExecutionId": "e931fd47-1be5-44fa-bdac-0cabfa2dc567"
+            }
+          }
+        ]
+      },
+      {
+        "id": "a823a99a-088d-4b64-b005-361fa412a66f",
+        "name": "I2-04 Evento desconocido para Reseñas",
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200 con lista vacía. Un evento sin reseñas no es un error, así Catálogo no cae en su respaldo.",
+            "type": "text/plain"
+          },
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "evt-999"
+            ],
+            "host": [
+              "{{baseUrlResenas}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "3494e8db-3059-4b2d-a96c-fc3fb9d7574e",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Sin reseñas', () => {",
+                "  pm.expect(body.promedio).to.eql(null);",
+                "  pm.expect(body.total_resenas).to.eql(0);",
+                "  pm.expect(body.resenas).to.eql([]);",
+                "});"
+              ],
+              "_lastExecutionId": "d1381b4e-39f0-4e53-9267-cca30ab55485"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "ca5acadd-cf01-4c67-95d4-c1e73828beb3",
+      "name": "I2 - Reseñas ofrece promedio y listado a Catálogo",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Integración I2 (tipo B, servicio ofrecido). Contrato acordado con Catálogo: GET /api/v1/resenas/evento/{id_evento}. Datos esperados según seed.sql: evt-101 tiene 2 reseñas (promedio 4.5), evt-103 no tiene reseñas. Ejecutar con el backend de Reseñas levantado y la base recién sembrada.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment"
+    },
+    "id": "9b76bf36-4a7c-4aca-bb14-9f9d5cda3a16",
+    "name": "Reseñas - local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:5000",
+        "key": "baseUrlResenas"
+      },
+      {
+        "type": "any",
+        "value": "evt-101",
+        "key": "eventoConResenas"
+      },
+      {
+        "type": "any",
+        "value": "evt-103",
+        "key": "eventoSinResenas"
+      },
+      {
+        "type": "any",
+        "value": "evt-102",
+        "key": "eventoCatalogo"
+      }
+    ]
+  },
+  "globals": {
+    "id": "221fb5bc-399b-4c73-bb8c-aea0a22d799a",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 12,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 0,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 65,
+      "responseMin": 7,
+      "responseMax": 234,
+      "responseSd": 97.5935448685004,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1793802511126,
+      "completed": 1793802511741
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "43f71734-4078-4973-b030-0b647d9f7aca",
+          "httpRequestId": "125370eb-43aa-4c04-b382-cf5167d0a34e"
+        },
+        "item": {
+          "id": "b6eaa767-aee6-407e-af9e-5e5c28304a74",
+          "name": "I2-01 Éxito: evento con reseñas",
+          "request": {
+            "description": {
+              "content": "Resultado esperado: 200, id_evento, promedio 4.5, total_resenas 2, reseñas de la más reciente a la más antigua, campos en snake_case.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "resenas",
+                "evento",
+                "{{eventoConResenas}}"
+              ],
+              "host": [
+                "{{baseUrlResenas}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e0596371-f4ce-48c4-bd70-5e4e437625fb",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Trae id_evento, promedio, total_resenas y resenas', () => {",
+                  "  pm.expect(body).to.have.property('id_evento', pm.environment.get('eventoConResenas'));",
+                  "  pm.expect(body).to.have.property('promedio');",
+                  "  pm.expect(body).to.have.property('total_resenas');",
+                  "  pm.expect(body.resenas).to.be.an('array');",
+                  "});",
+                  "pm.test('Promedio 4.5 y total 2 (seed)', () => {",
+                  "  pm.expect(body.promedio).to.eql(4.5);",
+                  "  pm.expect(body.total_resenas).to.eql(2);",
+                  "});",
+                  "pm.test('total_resenas coincide con la lista', () => pm.expect(body.total_resenas).to.eql(body.resenas.length));",
+                  "pm.test('Cada reseña trae usuario_id, calificacion y fecha', () => {",
+                  "  body.resenas.forEach(r => {",
+                  "    pm.expect(r).to.have.property('usuario_id');",
+                  "    pm.expect(r.calificacion).to.be.within(1, 5);",
+                  "    pm.expect(r).to.have.property('fecha');",
+                  "  });",
+                  "});",
+                  "pm.test('Orden de más reciente a menos reciente', () => {",
+                  "  const f = body.resenas.map(r => new Date(r.fecha).getTime());",
+                  "  pm.expect(f).to.eql([...f].sort((a, b) => b - a));",
+                  "});"
+                ],
+                "_lastExecutionId": "156fd7cb-0e5f-43cd-a781-8e111b246b56"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200, id_evento, promedio 4.5, total_resenas 2, reseñas de la más reciente a la más antigua, campos en snake_case.",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "evt-101"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "60147416-ed84-44e0-ae92-ba8572f39719",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "3511e155-f26a-4795-99af-889796e7cfa9",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "320"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"140-VOkDw+OahFj5Qk63/cl3q9ZXXoc\""
+            },
+            {
+              "key": "Date",
+              "value": "Wed, 04 Nov 2026 14:28:31 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              95,
+              101,
+              118,
+              101,
+              110,
+              116,
+              111,
+              34,
+              58,
+              34,
+              101,
+              118,
+              116,
+              45,
+              49,
+              48,
+              49,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              109,
+              101,
+              100,
+              105,
+              111,
+              34,
+              58,
+              52,
+              46,
+              53,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              50,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              91,
+              123,
+              34,
+              117,
+              115,
+              117,
+              97,
+              114,
+              105,
+              111,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              49,
+              34,
+              44,
+              34,
+              99,
+              97,
+              108,
+              105,
+              102,
+              105,
+              99,
+              97,
+              99,
+              105,
+              111,
+              110,
+              34,
+              58,
+              53,
+              44,
+              34,
+              102,
+              101,
+              99,
+              104,
+              97,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              57,
+              45,
+              48,
+              56,
+              84,
+              49,
+              56,
+              58,
+              51,
+              48,
+              58,
+              48,
+              48,
+              46,
+              48,
+              48,
+              48,
+              90,
+              34,
+              44,
+              34,
+              99,
+              111,
+              109,
+              101,
+              110,
+              116,
+              97,
+              114,
+              105,
+              111,
+              34,
+              58,
+              34,
+              69,
+              120,
+              99,
+              101,
+              108,
+              101,
+              110,
+              116,
+              101,
+              32,
+              111,
+              114,
+              103,
+              97,
+              110,
+              105,
+              122,
+              97,
+              99,
+              105,
+              111,
+              110,
+              32,
+              121,
+              32,
+              99,
+              111,
+              110,
+              116,
+              101,
+              110,
+              105,
+              100,
+              111,
+              46,
+              34,
+              125,
+              44,
+              123,
+              34,
+              117,
+              115,
+              117,
+              97,
+              114,
+              105,
+              111,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              50,
+              34,
+              44,
+              34,
+              99,
+              97,
+              108,
+              105,
+              102,
+              105,
+              99,
+              97,
+              99,
+              105,
+              111,
+              110,
+              34,
+              58,
+              52,
+              44,
+              34,
+              102,
+              101,
+              99,
+              104,
+              97,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              57,
+              45,
+              48,
+              53,
+              84,
+              49,
+              50,
+              58,
+              48,
+              48,
+              58,
+              48,
+              48,
+              46,
+              48,
+              48,
+              48,
+              90,
+              34,
+              44,
+              34,
+              99,
+              111,
+              109,
+              101,
+              110,
+              116,
+              97,
+              114,
+              105,
+              111,
+              34,
+              58,
+              34,
+              77,
+              117,
+              121,
+              32,
+              98,
+              117,
+              101,
+              110,
+              97,
+              32,
+              101,
+              120,
+              112,
+              101,
+              114,
+              105,
+              101,
+              110,
+              99,
+              105,
+              97,
+              44,
+              32,
+              97,
+              117,
+              110,
+              113,
+              117,
+              101,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              111,
+              32,
+              116,
+              97,
+              114,
+              100,
+              101,
+              46,
+              34,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 234,
+          "responseSize": 320
+        },
+        "id": "b6eaa767-aee6-407e-af9e-5e5c28304a74",
+        "assertions": [
+          {
+            "assertion": "Estado 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Trae id_evento, promedio, total_resenas y resenas",
+            "skipped": false
+          },
+          {
+            "assertion": "Promedio 4.5 y total 2 (seed)",
+            "skipped": false
+          },
+          {
+            "assertion": "total_resenas coincide con la lista",
+            "skipped": false
+          },
+          {
+            "assertion": "Cada reseña trae usuario_id, calificacion y fecha",
+            "skipped": false
+          },
+          {
+            "assertion": "Orden de más reciente a menos reciente",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "756c7def-0ce1-44c5-9c18-3275426794ae",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "597a476e-8e24-480c-a155-2378d552e886"
+        },
+        "item": {
+          "id": "1373c44f-2ab4-4849-a76a-0a93597bac1f",
+          "name": "I2-02 Éxito: evento sin reseñas",
+          "request": {
+            "description": {
+              "content": "Resultado esperado: 200 con promedio null, total_resenas 0 y resenas []. Nunca un error.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "resenas",
+                "evento",
+                "{{eventoSinResenas}}"
+              ],
+              "host": [
+                "{{baseUrlResenas}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "eb54d103-636b-4d63-bcfa-3e11e2db7922",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Estado vacío: promedio null, total 0, lista vacía', () => {",
+                  "  pm.expect(body.promedio).to.eql(null);",
+                  "  pm.expect(body.total_resenas).to.eql(0);",
+                  "  pm.expect(body.resenas).to.eql([]);",
+                  "});"
+                ],
+                "_lastExecutionId": "7883ad21-ff7b-444f-b873-fe5d449af0bf"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200 con promedio null, total_resenas 0 y resenas []. Nunca un error.",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "evt-103"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "308a811b-3e1a-49d6-a097-2e1057447c32",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "016bcfaa-2230-4e35-9c74-c4d621bf68f8",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "70"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"46-dmNKxoTbYSUK0C9iwuKNSLLUNfM\""
+            },
+            {
+              "key": "Date",
+              "value": "Wed, 04 Nov 2026 14:28:31 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              95,
+              101,
+              118,
+              101,
+              110,
+              116,
+              111,
+              34,
+              58,
+              34,
+              101,
+              118,
+              116,
+              45,
+              49,
+              48,
+              51,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              109,
+              101,
+              100,
+              105,
+              111,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              48,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              91,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 12,
+          "responseSize": 70
+        },
+        "id": "1373c44f-2ab4-4849-a76a-0a93597bac1f",
+        "assertions": [
+          {
+            "assertion": "Estado 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Estado vacío: promedio null, total 0, lista vacía",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "6e8243f3-4de3-43e7-87c8-e10b914cb96b",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "69e9e80c-8a2c-4f0f-85de-d5eee4aed36e"
+        },
+        "item": {
+          "id": "052597ea-be78-4cb4-a191-401a1c0d42d7",
+          "name": "I2-03 Error: id de evento con formato inválido",
+          "request": {
+            "description": {
+              "content": "Resultado esperado: 400, el id debe tener el formato evt-{id}.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "resenas",
+                "evento",
+                "1"
+              ],
+              "host": [
+                "{{baseUrlResenas}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "42edbe51-a929-4a84-98b9-daffe109568b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Informa el error', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ],
+                "_lastExecutionId": "e931fd47-1be5-44fa-bdac-0cabfa2dc567"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 400, el id debe tener el formato evt-{id}.",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "1"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "ac504210-8609-47e7-b7e8-1d2328b0c4b2",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "0d84e3cf-0197-45e9-8d90-f4f87e4e44ce",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "50"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"32-iaqBkW9GwVHu+3/BeVqTiYisMI8\""
+            },
+            {
+              "key": "Date",
+              "value": "Wed, 04 Nov 2026 14:28:31 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              101,
+              118,
+              101,
+              110,
+              116,
+              111,
+              73,
+              100,
+              32,
+              100,
+              101,
+              98,
+              101,
+              32,
+              117,
+              115,
+              97,
+              114,
+              32,
+              101,
+              108,
+              32,
+              102,
+              111,
+              114,
+              109,
+              97,
+              116,
+              111,
+              32,
+              101,
+              118,
+              116,
+              45,
+              123,
+              105,
+              100,
+              125,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 7,
+          "responseSize": 50
+        },
+        "id": "052597ea-be78-4cb4-a191-401a1c0d42d7",
+        "assertions": [
+          {
+            "assertion": "Estado 400",
+            "skipped": false
+          },
+          {
+            "assertion": "Informa el error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "2d693852-c829-4dc4-9de4-f2d08c4c041b",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "f9fede98-e14a-4228-be44-e5b33763c460"
+        },
+        "item": {
+          "id": "a823a99a-088d-4b64-b005-361fa412a66f",
+          "name": "I2-04 Evento desconocido para Reseñas",
+          "request": {
+            "description": {
+              "content": "Resultado esperado: 200 con lista vacía. Un evento sin reseñas no es un error, así Catálogo no cae en su respaldo.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "resenas",
+                "evento",
+                "evt-999"
+              ],
+              "host": [
+                "{{baseUrlResenas}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "3494e8db-3059-4b2d-a96c-fc3fb9d7574e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Sin reseñas', () => {",
+                  "  pm.expect(body.promedio).to.eql(null);",
+                  "  pm.expect(body.total_resenas).to.eql(0);",
+                  "  pm.expect(body.resenas).to.eql([]);",
+                  "});"
+                ],
+                "_lastExecutionId": "d1381b4e-39f0-4e53-9267-cca30ab55485"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Resultado esperado: 200 con lista vacía. Un evento sin reseñas no es un error, así Catálogo no cae en su respaldo.",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "v1",
+              "resenas",
+              "evento",
+              "evt-999"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0c2d43c5-e205-492c-b133-87f7d1b6da2b",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "98d758dd-aab8-41ce-8413-602173f90f9f",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "70"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"46-R854xh4Rd3g6SJSX6B69gqzLSFU\""
+            },
+            {
+              "key": "Date",
+              "value": "Wed, 04 Nov 2026 14:28:31 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              95,
+              101,
+              118,
+              101,
+              110,
+              116,
+              111,
+              34,
+              58,
+              34,
+              101,
+              118,
+              116,
+              45,
+              57,
+              57,
+              57,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              109,
+              101,
+              100,
+              105,
+              111,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              48,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              91,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 7,
+          "responseSize": 70
+        },
+        "id": "a823a99a-088d-4b64-b005-361fa412a66f",
+        "assertions": [
+          {
+            "assertion": "Estado 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Sin reseñas",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 510
+    },
+    "failures": [],
+    "error": null
+  }
+}
