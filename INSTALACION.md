@@ -55,7 +55,8 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 | `FRONTEND_ORIGIN` | Origen del front autorizado para CORS | `http://localhost:3000` |
 | `API_GATEWAY_DOCKER_URL` | Gateway visto desde dentro de los contenedores | `http://api-gateway:8080` |
 | `CATALOGO_SERVICE_DOCKER_URL` | Catálogo. **Debe apuntar al Gateway** (`<gateway>/api/catalogo`), no directo al contenedor de Catálogo | `http://api-gateway:8080/api/catalogo` |
-| `CHECKIN_SERVICE_DOCKER_URL` | Check-in vía Gateway (`<gateway>/api/checkin`) | `http://api-gateway:8080/api/checkin` |
+| `CHECKIN_SERVICE_URL` | Check-in desde el host local | `http://localhost:3005/api/checkin` |
+| `CHECKIN_SERVICE_DOCKER_URL` | Check-in directo por `plataforma-eventos-net` | `http://checkin-service:3005/api/checkin` |
 | `CATALOGO_TIMEOUT_MS` / `CHECKIN_TIMEOUT_MS` | Timeout de las llamadas a otros módulos | `2000` |
 | `SERVICE_TO_SERVICE_TOKEN` | Token servicio a servicio, si se acuerda | (vacío por defecto) |
 | `AUTH_SERVICE_DOCKER_URL` | URL privada de Auth para introspección (no se llama por Gateway) | `http://auth-service:10000` |
@@ -64,13 +65,13 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 | `BROKER_URL` | Conexión AMQP a RabbitMQ | `amqp://ticketu:ticketu@ticketu-rabbitmq:5672/ticketu` |
 | `EVENT_EXCHANGE` | Exchange compartido | `ticketu.events` |
 
-> **Nota:** En `.env.example` también están definidas `API_GATEWAY_URL`, `CATALOGO_SERVICE_URL`, `CHECKIN_SERVICE_URL` y `BROKER_DOCKER_URL` para ejecución local sin Docker (usando `localhost`).
+> **Nota:** En `.env.example`, Catálogo continúa usando el Gateway. Check-in usa `CHECKIN_SERVICE_URL` desde el host (`localhost:3005`) y `CHECKIN_SERVICE_DOCKER_URL` desde Docker (`checkin-service:3005`).
 
 ### 3.2 Front-end (`code/frontend/.env.local`, o `.env` con Docker)
 
 | Variable | Descripción | Valor en workstation |
 |---|---|---|
-| `NEXT_PUBLIC_GATEWAY_URL` | URL del Gateway **alcanzable desde el navegador** (no nombres internos de Docker) | `http://localhost:5000` |
+| `NEXT_PUBLIC_GATEWAY_URL` | URL del Gateway **alcanzable desde el navegador** (no nombres internos de Docker) | `http://localhost:8080` |
 
 > **Importante:** `NEXT_PUBLIC_GATEWAY_URL` debe estar definida **antes** de `npm run build` (o `docker compose up --build`). Si se cambia después, hay que volver a compilar.
 
@@ -105,7 +106,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-El compose levanta **PostgreSQL, RabbitMQ y el microservicio**. Ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `ms-resenas` / `resenas-service`. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`; el Gateway debe conservar la cookie de sesión.
+El compose levanta **PostgreSQL, RabbitMQ y el microservicio**. Ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `ms-resenas` / `resenas-service`. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`; el Gateway debe conservar la cookie de sesión. Levanta Check-in desde su propio repositorio en la misma red; Reseñas consulta su endpoint interno directamente, sin pasar por el Gateway. El Compose de Check-in también requiere `AUTH_SERVICE_URL` y `AUTH_INTERNAL_API_KEY` para arrancar; configúralos según el entorno.
 
 Si el volumen de PostgreSQL ya existía antes de agregar `auth_uuid`, aplica la migración sin borrar los datos:
 
@@ -213,5 +214,5 @@ Configuración: `BROKER_URL`, `EVENT_EXCHANGE` (por defecto `ticketu.events`). S
 - **Pruebas automáticas del backend**: `npm test` en `code/backend`.
 - **Auth**: Reseñas valida las operaciones protegidas consultando `/internal/validar-sesion` directamente; requiere `AUTH_INTERNAL_API_KEY` y que el Gateway conserve la cookie `jwt`.
 - **Roles esperados**: `usuario` (publicar reseñas), `organizador` (responder si se valida la propiedad del evento). Otros roles reciben 403.
-- **Validación de elegibilidad**: El backend consulta a Check-in vía `GET /api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}` antes de permitir crear una reseña.
+- **Validación de elegibilidad**: El backend consulta directamente `GET http://checkin-service:3005/api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}` dentro de Docker. La rama `integracion` responde `{"asistio": true|false}` y no valida un token de servicio en esta ruta; mantenla accesible solo desde la red de confianza.
 - **Consulta a Catálogo**: El backend consulta a Catálogo vía `GET /api/catalogo/eventos/{eventoId}/info-servicio` para validar que el evento existe al crear una reseña.

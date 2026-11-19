@@ -3,6 +3,7 @@ const { afterEach, test } = require('node:test');
 
 process.env.API_GATEWAY_URL = 'http://gateway:8080';
 process.env.CHECKIN_SERVICE_URL = 'http://gateway:8080/api/checkin';
+process.env.SERVICE_TO_SERVICE_TOKEN = '';
 process.env.CATALOGO_TIMEOUT_MS = '100';
 process.env.CHECKIN_TIMEOUT_MS = '100';
 
@@ -43,11 +44,10 @@ test('consulta asistencia por usuario y evento y acepta asistio=false', async ()
   let llamada;
   global.fetch = async (url, options) => {
     llamada = { url: String(url), options };
-    return new Response(JSON.stringify({
-      usuarioId: authUuid,
-      eventoId: 'evento-7',
-      asistio: false
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ asistio: false }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   };
 
   const asistio = await checkin.verificarAsistencia(authUuid, 'evento-7', 'correlation-test');
@@ -59,6 +59,7 @@ test('consulta asistencia por usuario y evento y acepta asistio=false', async ()
   assert.equal(url.searchParams.get('usuarioId'), authUuid);
   assert.equal(url.searchParams.get('eventoId'), 'evento-7');
   assert.equal(llamada.options.headers['X-Correlation-Id'], 'correlation-test');
+  assert.equal(llamada.options.headers.Authorization, undefined);
 });
 
 test('falla de forma cerrada cuando Check-in aún no implementa la ruta contractual', async () => {

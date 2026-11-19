@@ -61,7 +61,7 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/catalogo}
       API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://api-gateway:8080}
-      CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/checkin}
+      CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://checkin-service:3005/api/checkin}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_DOCKER_URL:-http://auth-service:10000}
       AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-}
       AUTH_TIMEOUT_MS: ${AUTH_TIMEOUT_MS:-1000}
