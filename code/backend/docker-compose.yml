@@ -27,7 +27,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT_PUBLISHED:-5433}:5432"
+      - "${DB_PORT_PUBLISHED:-5433}:5433"
     volumes:
       - resenas-postgres-data:/var/lib/postgresql/data
       - ./src/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
@@ -54,7 +54,7 @@ services:
     environment:
       PORT: ${PORT:-3000}
       DB_HOST: postgres-resenas
-      DB_PORT: 5432
+      DB_PORT: 5433
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
