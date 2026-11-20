@@ -1,15 +1,15 @@
 services:
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: rabbitmq
+    container_name: ticketu-rabbitmq-resenas
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ticketu
       RABBITMQ_DEFAULT_PASS: ticketu
       RABBITMQ_DEFAULT_VHOST: ticketu
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5680:5672"
+      - "15680:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT_PUBLISHED:-5433}:5433"
+      - "${DB_PORT_PUBLISHED:-5440}:5432"
     volumes:
       - resenas-postgres-data:/var/lib/postgresql/data
       - ./src/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
@@ -54,7 +54,7 @@ services:
     environment:
       PORT: ${PORT:-3000}
       DB_HOST: postgres-resenas
-      DB_PORT: 5433
+      DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
