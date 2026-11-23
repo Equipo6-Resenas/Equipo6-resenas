@@ -79,13 +79,17 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 
 ## 4. Puertos
 
-| Componente | Puerto |
+| Componente | Puerto (Workstation Oficial / Entrega 4) |
 |---|---|
 | Front-end | `3000` |
 | API Gateway | `8080` |
-| Backend Reseñas | `3000` dentro de la red Docker; publicado en el host como `5000` |
-| PostgreSQL de Reseñas | `5432` dentro de la red; `5433` publicado en el host (mapeo 5433:5432) |
-| RabbitMQ (compartido) | `5672` / `15672` (servicio `ticketu-rabbitmq` del Platform Team) |
+| Backend Reseñas | `3000` (red) → `5000` (host) |
+| PostgreSQL Reseñas | `5432` (red) → `5433` (host) (mapeo 5433:5432) |
+| **RabbitMQ** | `5672` / `15672` — **broker compartido** `ticketu-rabbitmq` (Platform Team) |
+
+> **Workstation oficial (Entrega 4):** Usa **EXCLUSIVAMENTE** el broker compartido `ticketu-rabbitmq` en red `plataforma-eventos-net`.
+> Credenciales Platform Team: usuario `ticketu`, contraseña `ticketu_dev`, vhost `ticketu`.
+> **NO levantar broker propio** — requisito de arquitectura común (Platform Team).
 
 ---
 
@@ -97,16 +101,23 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 docker network create plataforma-eventos-net
 ```
 
-### 5.2 Backend, base de datos y RabbitMQ
+### 5.2 Backend, base de datos y RabbitMQ — Workstation Oficial (Entrega 4)
+
+Usa **EXCLUSIVAMENTE** el broker compartido del Platform Team (`ticketu-rabbitmq` en red `plataforma-eventos-net`). **NO levantar broker propio** (requerimiento de arquitectura común).
 
 ```bash
 cd code/backend
-cp .env.example .env         
+cp .env.example .env          # Verificar BROKER_DOCKER_URL=amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu
 docker compose up --build -d
 docker compose ps
 ```
 
-El compose levanta **PostgreSQL y el microservicio** (RabbitMQ ya no se levanta localmente; se usa el broker compartido `ticketu-rabbitmq:5672` del Platform Team). Ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `ms-resenas` / `resenas-service`. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`; el Gateway debe conservar la cookie de sesión. Levanta Check-in desde su propio repositorio en la misma red; Reseñas consulta su endpoint interno directamente, sin pasar por el Gateway. El Compose de Check-in también requiere `AUTH_SERVICE_URL` y `AUTH_INTERNAL_API_KEY` para arrancar; configúralos según el entorno.
+> **Requisitos previos en workstation:**
+> - Red `plataforma-eventos-net` existe
+> - Platform Team tiene corriendo `ticketu-rabbitmq` en esa red (puertos 5672/15672, vhost `ticketu`, user `ticketu`, pass `ticketu_dev`)
+> - Auth, Gateway, Catálogo, Check-in también en la red
+
+El compose levanta **PostgreSQL y el microservicio** (NO levanta RabbitMQ local). Se conecta al broker compartido. Ejecuta `schema.sql` y `seed.sql` la primera vez. Servicio en red como `ms-resenas` / `resenas-service`.
 
 Si el volumen de PostgreSQL ya existía antes de agregar `auth_uuid`, aplica la migración sin borrar los datos:
 

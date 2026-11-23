@@ -1,0 +1,511 @@
+{
+  "info": {
+    "name": "Entrega 4 - Pruebas de Integración Reseñas (Workstation)",
+    "description": "Colección Postman para validar las 3 integraciones del módulo Reseñas en workstation:\n- I1: Auth (validación de sesión via cookie jwt + x-api-key)\n- I2: Catálogo (consumo GET /info-servicio y provisión GET /evento/{eventoId})\n- I3: RabbitMQ (publicación evento resena.creada en exchange ticketu.events)\n\n**Pre-requisitos workstation:**\n- Auth, API Gateway, RabbitMQ, Catálogo, Check-in desplegados\n- Variables de entorno configuradas en .env (ver INSTALACION.md)\n- Cookie `jwt` obtenida tras login en frontend (http://localhost:3000)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "reseñas-entrega4-integraciones",
+    "version": "2.0.0"
+  },
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8080",
+      "description": "URL del API Gateway en workstation (accesible desde navegador/host)"
+    },
+    {
+      "key": "backend_url",
+      "value": "http://localhost:5000",
+      "description": "URL directa del backend Reseñas (puerto 5000 mapeado de 3000 interno)"
+    },
+    {
+      "key": "evento_id",
+      "value": "evt-101",
+      "description": "ID de evento de prueba (existe en seed.sql)"
+    },
+    {
+      "key": "correlation_id",
+      "value": "{{$guid}}",
+      "description": "UUID v4 generado automáticamente por request para trazabilidad"
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "item": [
+    {
+      "name": "I1 - Auth: Validación de Sesión",
+      "description": "Pruebas de la integración I1 (Auth). El navegador envía cookie `jwt` HttpOnly; el backend la reenvía a Auth con `x-api-key` para introspección.",
+      "item": [
+        {
+          "name": "1.1 GET /api/resenas/me - Con sesión válida (via Gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/me",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Requiere cookie `jwt` válida. En Postman: usa Interceptor o copia la cookie del navegador tras login en http://localhost:3000"
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 GET /api/resenas/me - Sin cookie (debe dar 401)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/me",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Sin enviar cookie `jwt`. Debe responder 401 con código SESION_INVALIDA"
+          },
+          "response": []
+        },
+        {
+          "name": "1.3 POST /api/resenas - Con rol organizador (debe dar 403)",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/resenas",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Prueba rol organizador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "I2 - Catálogo: Consumo y Provisión",
+      "description": "Pruebas de la integración I2 (Catálogo). Reseñas CONSUME Catálogo para validar evento (GET /info-servicio). Catálogo CONSUME Reseñas para mostrar promedio y listado (GET /evento/{eventoId}).",
+      "item": [
+        {
+          "name": "2.1 GET /api/resenas/eligibilidad - Con sesión usuario (via Gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/eligibilidad",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "eventoId",
+                "value": "{{evento_id}}"
+              }
+            ],
+            "description": "Requiere cookie `jwt` de rol 'usuario'. Valida: (1) rol usuario, (2) evento existe en Catálogo, (3) asistencia en Check-in, (4) sin reseña previa. Esperado: 200 { puedeResenar: true/false, motivo }"
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 GET /api/resenas/eligibilidad - Evento inexistente (debe dar 404/503)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/eligibilidad",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "eventoId",
+                "value": "evt-99999"
+              }
+            ],
+            "description": "Evento que no existe en Catálogo. Backend llama a Catálogo y recibe 404 → Reseñas responde 503 o 404 según contrato"
+          },
+          "response": []
+        },
+        {
+          "name": "2.3 GET /api/resenas/evento/{{evento_id}} - I-3 Principal (público, via Gateway)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/evento/{{evento_id}}",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "pagina",
+                "value": "1"
+              },
+              {
+                "key": "tamano",
+                "value": "20"
+              }
+            ],
+            "description": "Endpoint principal I-3 consumido por Catálogo. NO requiere sesión. Devuelve: promedio (1 decimal), totalResenas, pagina, tamano, resenas[] ordenadas por fecha DESC. Seed tiene 3 reseñas en evt-101."
+          },
+          "response": []
+        },
+        {
+          "name": "2.4 GET /api/resenas/evento/evt-103 - Evento sin reseñas (público)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/evento/evt-103",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "pagina",
+                "value": "1"
+              },
+              {
+                "key": "tamano",
+                "value": "20"
+              }
+            ],
+            "description": "evt-103 existe en seed pero SIN reseñas. Esperado: 200 { promedio: null, totalResenas: 0, resenas: [] }"
+          },
+          "response": []
+        },
+        {
+          "name": "2.5 GET /api/resenas/evento/{{evento_id}}?tamano=500 - Parámetro inválido (400)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/evento/{{evento_id}}",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "pagina",
+                "value": "1"
+              },
+              {
+                "key": "tamano",
+                "value": "500"
+              }
+            ],
+            "description": "tamano > 50 (máximo permitido). Debe responder 400 con mensaje comprensible"
+          },
+          "response": []
+        },
+        {
+          "name": "2.6 POST /api/v1/resenas/calificaciones-basicas - Lote para Catálogo (público)",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/v1/resenas/calificaciones-basicas",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lista_id_eventos\": [\"evt-101\", \"evt-102\", \"evt-103\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Endpoint V1 optimizado para Catálogo: consulta en lote promedio y total. Máx 100 eventos. No requiere sesión."
+          },
+          "response": []
+        },
+        {
+          "name": "2.7 GET /api/v1/resenas/evento/{{evento_id}} - Formato V1 para Catálogo (público)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/v1/resenas/evento/{{evento_id}}",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "pagina",
+                "value": "1"
+              },
+              {
+                "key": "tamano",
+                "value": "20"
+              }
+            ],
+            "description": "Versión alternativa con snake_case en respuesta (id_evento, total_resenas, resena_id, usuario_id, calificacion, fecha, comentario)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "I3 - RabbitMQ: Publicación evento resena.creada",
+      "description": "Pruebas de la integración I3 (Broker). Tras crear una reseña (POST /api/resenas), el backend publica evento `resena.creada` en exchange `ticketu.events` (topic). Verificar en RabbitMQ Management UI: http://localhost:15672 (user: ticketu, pass: ticketu, vhost: ticketu).",
+      "item": [
+        {
+          "name": "3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/resenas",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`"
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 Verificar en BD - Última reseña insertada",
+          "request": {
+            "method": "GET",
+            "url": "{{backend_url}}/api/resenas/evento/{{evento_id}}?pagina=1&tamano=1",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha)."
+          },
+          "response": []
+        },
+        {
+          "name": "3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)",
+          "request": {
+            "method": "GET",
+            "url": "{{backend_url}}/health",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada)."
+          },
+          "response": []
+        },
+        {
+          "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:15672",
+            "header": [],
+            "description": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Utilitarios y Health Checks",
+      "description": "Endpoints de apoyo para diagnóstico y verificación de estado de servicios en workstation.",
+      "item": [
+        {
+          "name": "Health Check Backend directo",
+          "request": {
+            "method": "GET",
+            "url": "{{backend_url}}/api/resenas/health",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Verifica BD conectada. Debe responder 200 { status: OK, base_datos: conectada, db_hora }"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check Gateway",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/health",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "description": "Verifica Gateway operativo. Debe listar módulos configurados (8/9 con Catálogo configured=false si no está desplegado)."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar reseñas con filtros (público)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "id_evento",
+                "value": "{{evento_id}}"
+              }
+            ],
+            "description": "Endpoint público para listar reseñas de un evento con filtros opcionales (id_usuario, id_evento, clasificacion)."
+          },
+          "response": []
+        },
+        {
+          "name": "Promedio simple de un evento (público)",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resenas/promedio",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "queryParams": [
+              {
+                "key": "id_evento",
+                "value": "{{evento_id}}"
+              }
+            ],
+            "description": "Devuelve solo { promedio: 4.3 } (1 decimal, null si no hay reseñas)."
+          },
+          "response": []
+        },
+        {
+          "name": "Respuesta organizador - POST /api/resenas/:idResena/respuestas",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/resenas/1/respuestas",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texto\": \"Gracias por tu reseña, valoramos tu opinión.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Requiere cookie `jwt` de usuario 'organizador' QUE SEA el organizador del evento (id_organizador en BD coincide con UUID de Auth). Seed: evt-101 organizador id=1 (ana.lopez@tec.mx). Si no hay mapeo UUID-organizador → 403."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "protocolProfileBehavior": {
+    "disableBodyPruning": true
+  }
+}

@@ -49,6 +49,8 @@ services:
       CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-2000}
       CHECKIN_TIMEOUT_MS: ${CHECKIN_TIMEOUT_MS:-2000}
       SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN:-}
+      # Workstation oficial: broker compartido del Platform Team (ticketu-rabbitmq en red plataforma-eventos-net)
+      # Credenciales Platform Team: user=ticketu, pass=ticketu_dev, vhost=ticketu
       BROKER_URL: ${BROKER_DOCKER_URL:-amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu}
       EVENT_EXCHANGE: ticketu.events
     ports:
