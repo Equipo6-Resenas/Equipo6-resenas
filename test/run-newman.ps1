@@ -104,9 +104,9 @@ if ($EnvironmentFile) {
 }
 
 # Variables de entorno por defecto para workstation
-$env:gateway_url = $env:gateway_url ?? "http://localhost:8080"
-$env:backend_url = $env:backend_url ?? "http://localhost:5000"
-$env:evento_id   = $env:evento_id ?? "evt-101"
+if (-not $env:gateway_url) { $env:gateway_url = "http://localhost:8080" }
+if (-not $env:backend_url) { $env:backend_url = "http://localhost:5000" }
+if (-not $env:evento_id)   { $env:evento_id = "evt-101" }
 
 # Mostrar configuración
 Log-Info "=========================================="

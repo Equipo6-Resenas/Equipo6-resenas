@@ -13,9 +13,9 @@
 set -euo pipefail
 
 # Configuración
-COLLECTION_FILE="docs/test/Entrega4-Integraciones.postman_collection.json"
-ENV_FILE=""  # Opcional: archivo de environment .postman_environment.json
-REPORT_DIR="docs/test/newman-reports"
+COLLECTION_FILE="test/Entrega4-Integraciones.postman_collection.json"
+ENV_FILE="test/workstation.postman_environment.json"  # Opcional: archivo de environment .postman_environment.json
+REPORT_DIR="test/newman-reports"
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
 REPORT_HTML="${REPORT_DIR}/newman-report-${TIMESTAMP}.html"
 REPORT_JSON="${REPORT_DIR}/newman-report-${TIMESTAMP}.json"
