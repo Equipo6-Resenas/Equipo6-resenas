@@ -27,7 +27,7 @@ Según la Especificación Evaluación 4 (sección 3), cada rol debe tener al men
 A la fecha de la Entrega 4, **todos los issues del repositorio están completados/cerrados**:
 
 - Ver issues: https://github.com/Equipo6-Resenas/Equipo6-resenas/issues?q=is%3Aissue
-- Ver project board: https://github.com/Equipo6-Resenas/Equipo6-resenas/projects
+- Ver project board: https://github.com/orgs/Equipo6-Resenas/projects/1/views/4
 
 Los issues incluyen: historias de usuario (HU1, HU4), tareas de integración (I1, I2, I3), configuración de infraestructura, pruebas y documentación.
 
