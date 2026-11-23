@@ -10,12 +10,32 @@ Repositorio del proyecto **Reseñas**, desarrollado por el Grupo 6 del ramo **Ta
 | Constanza Díaz Pulgar | constanza.diazpu@estudiantes.uv.cl | Scrum Master; QA |
 | Bruno González Luke | bruno.gonzalez@estudiantes.uv.cl | Frontend |
 | Rodrigo Pino Araya | rodrigo.pino@estudiantes.uv.cl | Backend; Base de Datos |
+## Entrega 4
+### Responsables
+
+Según la Especificación Evaluación 4 (sección 3), cada rol debe tener al menos un responsable. La nota de cada rol compone la parte individual de sus responsables.
+
+| Integrante | Rol(es) | Ítems de la rúbrica asociados |
+|---|---|---|
+| **Rodrigo Pino Araya** | Back End, Base de Datos | BE1–BE4, BD1–BD4 |
+| **Bruno González Luke** | UI/UX (Front End) | UI1–UI4 |
+| **Constanza Díaz Pulgar** | Gestión, Calidad | GE1–GE4, CA1–CA4 |
+| **Vicente Cruces Collao** | Calidad | CA1–CA4 |
+
+### Estado de Issues (GitHub Projects)
+
+A la fecha de la Entrega 4, **todos los issues del repositorio están completados/cerrados**:
+
+- Ver issues: https://github.com/Equipo6-Resenas/Equipo6-resenas/issues?q=is%3Aissue
+- Ver project board: https://github.com/Equipo6-Resenas/Equipo6-resenas/projects
+
+Los issues incluyen: historias de usuario (HU1, HU4), tareas de integración (I1, I2, I3), configuración de infraestructura, pruebas y documentación.
 
 ### Integraciones
 
 | Integración | Tipo (A, B o C) | Módulo contraparte | Servicio, endpoint o tópico | Contrato | Ítem en GitHub |
 |---|---|---|---|---|---|
-| I1 | A | Auth | Sesión mediante cookie `jwt` e introspección interna `GET /internal/validar-sesion` | Contrato Auth | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
+| I1 | A | Auth | Sesión mediante cookie `jwt` e introspección interna `GET /internal/validar-sesion` | [Contrato Auth](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20Auth.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/12 |
 | I2 | B | Catálogo | `GET /api/resenas/evento/{eventoId}` (provisto por Reseñas) | [Contrato Catálogo Promedio Reseñas](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20Catalogo%20Promedio%20Rese%C3%B1as.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/16 |
 | I3 | C | Organizador | Evento `resena.creada` en exchange `ticketu.events` | [Contrato integración general](https://github.com/Equipo6-Resenas/Equipo6-resenas/blob/main/contract/Contrato%20integraci%C3%B3n%20general.md) | https://github.com/Equipo6-Resenas/Equipo6-resenas/issues/17 |
 
