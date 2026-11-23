@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT_PUBLISHED:-5433}:5432"
+      - "${DB_PORT_PUBLISHED:-5440}:5432"
     volumes:
       - resenas-postgres-data:/var/lib/postgresql/data
       - ./src/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
@@ -21,6 +21,7 @@ services:
         ]
       interval: 5s
       timeout: 5s
+      
       retries: 20
     networks:
       plataforma-eventos-net:
@@ -39,14 +40,19 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
-      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/catalogo}
-      API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://api-gateway:8080}
-      CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/checkin}
+      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://ticketu-api-gateway:8080/api/catalogo}
+      API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://ticketu-api-gateway:8080}
+      CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://checkin-service:3005/api/checkin}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_DOCKER_URL:-http://auth-service:10000}
+      AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-}
+      AUTH_TIMEOUT_MS: ${AUTH_TIMEOUT_MS:-1000}
       CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-2000}
       CHECKIN_TIMEOUT_MS: ${CHECKIN_TIMEOUT_MS:-2000}
       SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN:-}
-      BROKER_URL: ${BROKER_DOCKER_URL:-}
-      EVENT_EXCHANGE: ${EVENT_EXCHANGE:-ticketu.events}
+      # Workstation oficial: broker compartido del Platform Team (ticketu-rabbitmq en red plataforma-eventos-net)
+      # Credenciales Platform Team: user=ticketu, pass=ticketu_dev, vhost=ticketu
+      BROKER_URL: ${BROKER_DOCKER_URL:-amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu}
+      EVENT_EXCHANGE: ticketu.events
     ports:
       - "5000:3000"
     depends_on:

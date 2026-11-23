@@ -7,8 +7,12 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
+    "test:integration": "bash ../../docs/test/run-newman.sh",
+    "test:integration:ci": "bash ../../docs/test/run-newman.sh --json-only",
+    "test:integration:bail": "bash ../../docs/test/run-newman.sh --bail",
     "db:init": "node src/database/init.js",
-    "db:seed": "node src/database/init.js --solo-semilla"
+    "db:seed": "node src/database/init.js --solo-semilla",
+    "db:migrate:auth": "node src/database/migrate-auth-uuid.js"
   },
   "keywords": [
     "resenas",

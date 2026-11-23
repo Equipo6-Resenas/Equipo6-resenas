@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CurrentUser, NewReviewInput, Review } from "./types";
-import { crearResena, crearRespuesta, obtenerResenasDeEvento } from "./api";
+import {
+  crearResena,
+  crearRespuesta,
+  eliminarResena,
+  obtenerResenasDeEvento,
+  reportarResena,
+} from "./api";
 
 export function useReviews(eventId: string) {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -48,8 +54,8 @@ export function useReviews(eventId: string) {
   );
 
   const addReview = useCallback(
-    async (user: CurrentUser, input: NewReviewInput) => {
-      const review = await crearResena(eventId, user.id, input);
+    async (input: NewReviewInput) => {
+      const review = await crearResena(eventId, input);
       setReviews((prev) => [review, ...prev.filter((item) => item.id !== review.id)]);
     },
     [eventId],
@@ -57,7 +63,7 @@ export function useReviews(eventId: string) {
 
   const addReply = useCallback(
     async (reviewId: string, author: CurrentUser, text: string) => {
-      const reply = await crearRespuesta(reviewId, author.id, text);
+      const reply = await crearRespuesta(reviewId, text);
       setReviews((prev) =>
         prev.map((review) =>
           review.id === reviewId
@@ -77,5 +83,31 @@ export function useReviews(eventId: string) {
     [],
   );
 
-  return { reviews: sorted, loading, error, addReview, addReply };
+  /** HU3: reportar con motivo. */
+  const reportReview = useCallback(async (reviewId: string, reason: string) => {
+    const report = await reportarResena(reviewId, reason);
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === reviewId
+          ? { ...review, report: { reason: report.motivo, createdAt: report.fecha_reporte } }
+          : review,
+      ),
+    );
+  }, []);
+
+  /** HU3: eliminar una reseña ya reportada (sale de la lista). */
+  const deleteReview = useCallback(async (reviewId: string) => {
+    await eliminarResena(reviewId);
+    setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+  }, []);
+
+  return {
+    reviews: sorted,
+    loading,
+    error,
+    addReview,
+    addReply,
+    reportReview,
+    deleteReview,
+  };
 }

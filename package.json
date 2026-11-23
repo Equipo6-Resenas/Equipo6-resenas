@@ -1,0 +1,40 @@
+{
+  "name": "equipo6-resenas",
+  "version": "2.0.0",
+  "description": "Módulo Reseñas - Equipo 6 TITEC 2026-2 (Entrega 4)",
+  "private": true,
+  "scripts": {
+    "test:integration": "bash docs/test/run-newman.sh",
+    "test:integration:ci": "bash docs/test/run-newman.sh --json-only",
+    "test:integration:bail": "bash docs/test/run-newman.sh --bail",
+    "test:integration:auth": "bash docs/test/run-newman.sh --folder \"I1 - Auth\"",
+    "test:integration:catalogo": "bash docs/test/run-newman.sh --folder \"I2 - Catálogo\"",
+    "test:integration:rabbitmq": "bash docs/test/run-newman.sh --folder \"I3 - RabbitMQ\"",
+    "backend:install": "cd code/backend && npm install",
+    "backend:start": "cd code/backend && npm start",
+    "backend:dev": "cd code/backend && npm run dev",
+    "backend:db:init": "cd code/backend && npm run db:init",
+    "backend:db:seed": "cd code/backend && npm run db:seed",
+    "backend:db:migrate": "cd code/backend && npm run db:migrate:auth",
+    "docker:backend": "cd code/backend && docker compose up --build -d",
+    "docker:backend:down": "cd code/backend && docker compose down -v",
+    "docker:frontend": "cd code/frontend && docker compose up --build -d"
+  },
+  "devDependencies": {
+    "newman": "^6.1.2",
+    "newman-reporter-htmlextra": "^1.23.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "reseñas",
+    "eventos",
+    "titec",
+    "entrega4",
+    "microservicios",
+    "integracion"
+  ],
+  "author": "Equipo 6 - TITEC 2026-2",
+  "license": "ISC"
+}

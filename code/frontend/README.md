@@ -94,6 +94,8 @@ Centraliza la única dirección que necesita conocer el front: la del **API Gate
 
 Todos los módulos usan el Gateway; no se configuran URLs individuales de microservicios en el navegador.
 
+Reseñas incluye la cookie HttpOnly de Auth con `credentials: "include"`. El backend de Reseñas consulta Auth desde la red privada; la clave interna y el JWT nunca se leen desde JavaScript. El Gateway debe conservar las cookies y permitir credenciales para el origen del frontend.
+
 ---
 
 ## 3. Qué carpetas usa cada grupo

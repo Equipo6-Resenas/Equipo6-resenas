@@ -6,6 +6,7 @@ import { CheckIcon, InfoIcon, TriangleIcon } from "./icons";
 import { inter, poppins } from "../fonts";
 import {
   BLOCK_MESSAGES,
+  canModerateReviews,
   canReplyToReviews,
   getReviewEligibility,
 } from "../permissions";
@@ -28,7 +29,15 @@ interface ReviewsSectionProps {
 
 export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
   const panelId = useId();
-  const { reviews, loading, error, addReview, addReply } = useReviews(event.id);
+  const {
+    reviews,
+    loading,
+    error,
+    addReview,
+    addReply,
+    reportReview,
+    deleteReview,
+  } = useReviews(event.id);
 
   // open: lo que el usuario quiere (abierto/cerrado).
   // mounted: si el panel existe en la página. Al cerrar se mantiene hasta que
@@ -53,6 +62,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
     | { state: "error"; message: string }
   >({ state: "idle" });
   const canReply = canReplyToReviews(currentUser, event);
+  const canModerate = canModerateReviews(currentUser, event);
 
   useEffect(() => {
     if (!localEligibility.canReview || !currentUser) {
@@ -62,7 +72,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
 
     let cancelled = false;
     setEligibilityStatus({ state: "pending" });
-    verificarElegibilidad(event.id, currentUser.id)
+    verificarElegibilidad(event.id)
       .then((result) => {
         if (!cancelled) setEligibilityStatus({ state: "loaded", result });
       })
@@ -101,7 +111,7 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
     setSubmittingReview(true);
     setActionError(null);
     try {
-      await addReview(currentUser, input);
+      await addReview(input);
       setJustPublishedBy(currentUser.id);
     } catch (submitError) {
       setActionError(
@@ -269,6 +279,9 @@ export function ReviewsSection({ event, currentUser }: ReviewsSectionProps) {
                   key={review.id}
                   review={review}
                   canReply={canReply}
+                  canModerate={canModerate}
+                  onReport={reportReview}
+                  onDelete={deleteReview}
                   onReply={(reviewId, text) =>
                     currentUser
                       ? addReply(reviewId, currentUser, text)

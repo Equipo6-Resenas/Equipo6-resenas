@@ -13,33 +13,46 @@
 // Si se quiere renombrar a "Resenas", hay que coordinarlo con el Grupo 2.
 // ============================================================================
 
-import { useState } from "react";
-import { getMockEvent, SIMULATED_USERS } from "../mockData";
-import type { EventStatus } from "../types";
-import ResenasSimulacion from "./ResenasSimulacion";
+import { useEffect, useState } from "react";
+import { obtenerSesionResenas } from "../api";
+import { getMockEvent } from "../mockData";
+import type { CurrentUser } from "../types";
 import { ReviewsSection } from "./ReviewsSection";
 
-const SIMULAR = process.env.NEXT_PUBLIC_RESENAS_SIMULAR !== "false";
-
 export default function ResenasPlaceholder({ eventoId }: { eventoId: string }) {
-  const [userKey, setUserKey] = useState(SIMULATED_USERS[0].key);
-  const [status, setStatus] = useState<EventStatus>("finalizado");
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const event = { ...getMockEvent(eventoId), status: "finalizado" as const };
 
-  // TODO: el usuario real vendrá del módulo Auth y el evento, de Catálogo.
-  const currentUser = SIMULAR
-    ? (SIMULATED_USERS.find((u) => u.key === userKey)?.user ?? null)
-    : null;
-  const event = { ...getMockEvent(eventoId), status };
+  useEffect(() => {
+    let cancelled = false;
+    obtenerSesionResenas()
+      .then((user) => {
+        if (cancelled) return;
+        setCurrentUser(user);
+        setSessionError(null);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setCurrentUser(null);
+        setSessionError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo validar la sesión con Auth.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div>
-      {SIMULAR && (
-        <ResenasSimulacion
-          userKey={userKey}
-          onUserChange={setUserKey}
-          status={status}
-          onStatusChange={setStatus}
-        />
+      {sessionError && (
+        <p role="alert">
+          No se pudo consultar la sesión con Auth: {sessionError}
+        </p>
       )}
       <ReviewsSection event={event} currentUser={currentUser} />
     </div>

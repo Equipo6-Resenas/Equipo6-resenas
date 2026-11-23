@@ -3,6 +3,7 @@ const { afterEach, test } = require('node:test');
 
 process.env.API_GATEWAY_URL = 'http://gateway:8080';
 process.env.CHECKIN_SERVICE_URL = 'http://gateway:8080/api/checkin';
+process.env.SERVICE_TO_SERVICE_TOKEN = '';
 process.env.CATALOGO_TIMEOUT_MS = '100';
 process.env.CHECKIN_TIMEOUT_MS = '100';
 
@@ -10,6 +11,7 @@ const catalogo = require('../src/services/catalogo.service');
 const checkin = require('../src/services/checkin.service');
 
 const fetchOriginal = global.fetch;
+const authUuid = '3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a';
 
 afterEach(() => {
   global.fetch = fetchOriginal;
@@ -42,22 +44,22 @@ test('consulta asistencia por usuario y evento y acepta asistio=false', async ()
   let llamada;
   global.fetch = async (url, options) => {
     llamada = { url: String(url), options };
-    return new Response(JSON.stringify({
-      usuarioId: '2',
-      eventoId: 'evento-7',
-      asistio: false
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ asistio: false }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   };
 
-  const asistio = await checkin.verificarAsistencia('2', 'evento-7', 'correlation-test');
+  const asistio = await checkin.verificarAsistencia(authUuid, 'evento-7', 'correlation-test');
   const url = new URL(llamada.url);
 
   assert.equal(asistio, false);
   assert.equal(llamada.options.method, 'GET');
   assert.equal(url.pathname, '/api/checkin/asistencia');
-  assert.equal(url.searchParams.get('usuarioId'), '2');
+  assert.equal(url.searchParams.get('usuarioId'), authUuid);
   assert.equal(url.searchParams.get('eventoId'), 'evento-7');
   assert.equal(llamada.options.headers['X-Correlation-Id'], 'correlation-test');
+  assert.equal(llamada.options.headers.Authorization, undefined);
 });
 
 test('falla de forma cerrada cuando Check-in aún no implementa la ruta contractual', async () => {
@@ -66,7 +68,7 @@ test('falla de forma cerrada cuando Check-in aún no implementa la ruta contract
   }), { status: 404, headers: { 'Content-Type': 'application/json' } });
 
   await assert.rejects(
-    checkin.verificarAsistencia('2', 'evento-7'),
+    checkin.verificarAsistencia(authUuid, 'evento-7'),
     (error) => error.statusCode === 503
       && error.message.includes('todavía no implementa')
   );

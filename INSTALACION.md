@@ -2,7 +2,7 @@
 
 **Equipo:** Reseñas (Equipo6-Resenas)
 
-**Rama:** [Reseñas-WorkStation](https://github.com/Equipo6-Resenas/Equipo6-resenas/tree/workstation)
+**Rama:** [workstation](https://github.com/Equipo6-Resenas/Equipo6-resenas/tree/workstation)
 
 **Stack:** Backend Node.js 20 + Express · Base de datos PostgreSQL 16 · Front-end Next.js (módulo `resenas`)
 
@@ -22,7 +22,7 @@
 └── code/
     ├── backend/                    ← microservicio Reseñas (Express)
     │   ├── Dockerfile
-    │   ├── docker-compose.yml      ← Postgres + microservicio
+    │   ├── docker-compose.yml      ← Postgres + RabbitMQ + microservicio
     │   ├── .env.example
     │   └── src/database/           ← schema.sql (creación) y seed.sql (datos iniciales)
     └── frontend/                   ← front Next.js (base del Platform Team + módulo resenas)
@@ -51,23 +51,27 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 |---|---|---|
 | `PORT` | Puerto del servicio. **Con Docker debe ser `3000`** (el Gateway apunta a `resenas-service:3000`). Para ejecución local sin Docker puede ser `5000` | `3000` |
 | `DB_HOST` / `DB_PORT` | Host y puerto de PostgreSQL (con Docker: `postgres-resenas` / `5432`, lo fija el compose) | automático con Docker |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y base de datos | `postgres` / COMPLETAR / `resenas` |
-| `FRONTEND_ORIGIN` | Origen del front autorizado | COMPLETAR (jueves) |
-| `API_GATEWAY_DOCKER_URL` | Gateway visto desde dentro de los contenedores | COMPLETAR (jueves, ej. `http://api-gateway:8080`) |
-| `CATALOGO_SERVICE_DOCKER_URL` | Catálogo. **Debe apuntar al Gateway** (`<gateway>/api/catalogo`), no directo al contenedor de Catálogo | COMPLETAR (jueves) |
-| `CHECKIN_SERVICE_DOCKER_URL` | Check-in vía Gateway (`<gateway>/api/checkin`) | COMPLETAR (jueves) |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y base de datos | `postgres` / `postgres` / `resenas` |
+| `FRONTEND_ORIGIN` | Origen del front autorizado para CORS | `http://localhost:3000` |
+| `API_GATEWAY_DOCKER_URL` | Gateway visto desde dentro de los contenedores | `http://ticketu-api-gateway:8080` |
+| `CATALOGO_SERVICE_DOCKER_URL` | Catálogo. **Debe apuntar al Gateway** (`<gateway>/api/catalogo`), no directo al contenedor de Catálogo | `http://ticketu-api-gateway:8080/api/catalogo` |
+| `CHECKIN_SERVICE_URL` | Check-in desde el host local | `http://localhost:3005/api/checkin` |
+| `CHECKIN_SERVICE_DOCKER_URL` | Check-in directo por `plataforma-eventos-net` | `http://checkin-service:3005/api/checkin` |
 | `CATALOGO_TIMEOUT_MS` / `CHECKIN_TIMEOUT_MS` | Timeout de las llamadas a otros módulos | `2000` |
-| `SERVICE_TO_SERVICE_TOKEN` | Token servicio a servicio, si se acuerda | COMPLETAR |
-| `AUTH_URL` | Dirección de Auth vía Gateway (`<gateway>/api/auth`) | COMPLETAR (jueves) |
-| `AUTH_JWT_SECRET` o `AUTH_JWKS_URL` | Clave o endpoint para validar el token | COMPLETAR (según defina Auth) |
-| `BROKER_URL` | Conexión AMQP a RabbitMQ | COMPLETAR (ej. `amqp://ticketu:<clave>@ticketu-rabbitmq:5672/ticketu`) |
+| `SERVICE_TO_SERVICE_TOKEN` | Token servicio a servicio, si se acuerda | (vacío por defecto) |
+| `AUTH_SERVICE_DOCKER_URL` | URL privada de Auth para introspección (no se llama por Gateway) | `http://auth-service:10000` |
+| `AUTH_INTERNAL_API_KEY` | Secreto compartido por entorno con Auth | configurarlo por canal seguro |
+| `AUTH_TIMEOUT_MS` | Timeout de validación de sesión | `1000` |
+| `BROKER_URL` | Conexión AMQP a RabbitMQ (credenciales Platform Team) | `amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu` |
 | `EVENT_EXCHANGE` | Exchange compartido | `ticketu.events` |
+
+> **Nota:** En `.env.example`, Catálogo continúa usando el Gateway. Check-in usa `CHECKIN_SERVICE_URL` desde el host (`localhost:3005`) y `CHECKIN_SERVICE_DOCKER_URL` desde Docker (`checkin-service:3005`).
 
 ### 3.2 Front-end (`code/frontend/.env.local`, o `.env` con Docker)
 
 | Variable | Descripción | Valor en workstation |
 |---|---|---|
-| `NEXT_PUBLIC_GATEWAY_URL` | URL del Gateway **alcanzable desde el navegador** (no nombres internos de Docker) | COMPLETAR (jueves) |
+| `NEXT_PUBLIC_GATEWAY_URL` | URL del Gateway **alcanzable desde el navegador** (no nombres internos de Docker) | `http://localhost:8080` |
 
 > **Importante:** `NEXT_PUBLIC_GATEWAY_URL` debe estar definida **antes** de `npm run build` (o `docker compose up --build`). Si se cambia después, hay que volver a compilar.
 
@@ -75,13 +79,17 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 
 ## 4. Puertos
 
-| Componente | Puerto |
+| Componente | Puerto (Workstation Oficial / Entrega 4) |
 |---|---|
 | Front-end | `3000` |
 | API Gateway | `8080` |
-| Backend Reseñas | `3000` dentro de la red Docker; publicado en el host como `5000` |
-| PostgreSQL de Reseñas | `5432` dentro de la red; `5433` publicado en el host |
-| RabbitMQ (AMQP / panel) | `5672` / `15672` |
+| Backend Reseñas | `3000` (red) → `5000` (host) |
+| PostgreSQL Reseñas | `5432` (red) → `5433` (host) (mapeo 5433:5432) |
+| **RabbitMQ** | `5672` / `15672` — **broker compartido** `ticketu-rabbitmq` (Platform Team) |
+
+> **Workstation oficial (Entrega 4):** Usa **EXCLUSIVAMENTE** el broker compartido `ticketu-rabbitmq` en red `plataforma-eventos-net`.
+> Credenciales Platform Team: usuario `ticketu`, contraseña `ticketu_dev`, vhost `ticketu`.
+> **NO levantar broker propio** — requisito de arquitectura común (Platform Team).
 
 ---
 
@@ -93,18 +101,33 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 docker network create plataforma-eventos-net
 ```
 
-### 5.2 Backend y base de datos
+### 5.2 Backend, base de datos y RabbitMQ — Workstation Oficial (Entrega 4)
+
+Usa **EXCLUSIVAMENTE** el broker compartido del Platform Team (`ticketu-rabbitmq` en red `plataforma-eventos-net`). **NO levantar broker propio** (requerimiento de arquitectura común).
 
 ```bash
 cd code/backend
-cp .env.example .env         
+cp .env.example .env          # Verificar BROKER_DOCKER_URL=amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu
 docker compose up --build -d
 docker compose ps
 ```
 
-El compose levanta Postgres y ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `resenas-service` / `ms-resenas`.
+> **Requisitos previos en workstation:**
+> - Red `plataforma-eventos-net` existe
+> - Platform Team tiene corriendo `ticketu-rabbitmq` en esa red (puertos 5672/15672, vhost `ticketu`, user `ticketu`, pass `ticketu_dev`)
+> - Auth, Gateway, Catálogo, Check-in también en la red
 
-Para recargar los datos iniciales sin Docker: `npm run db:init` (crea y siembra) o `npm run db:seed` (solo datos).
+El compose levanta **PostgreSQL y el microservicio** (NO levanta RabbitMQ local). Se conecta al broker compartido. Ejecuta `schema.sql` y `seed.sql` la primera vez. Servicio en red como `ms-resenas` / `resenas-service`.
+
+Si el volumen de PostgreSQL ya existía antes de agregar `auth_uuid`, aplica la migración sin borrar los datos:
+
+```bash
+docker compose exec ms-resenas npm run db:migrate:auth
+```
+
+No uses `npm run db:init` para actualizar una base existente: vuelve a crear las tablas. Los usuarios antiguos no se vinculan automáticamente con Auth; solo deben asociarse mediante un mapeo de identidad verificado.
+
+Para una base nueva sin Docker: `npm run db:init` (crea y siembra). En una base existente, primero ejecuta `npm run db:migrate:auth`; no ejecutes `db:init` porque recrea las tablas. `npm run db:seed` carga solo datos iniciales.
 
 ### 5.3 Front-end
 
@@ -120,35 +143,87 @@ Sin Docker: `cp .env.example .env.local && npm install && npm run build && npm r
 
 ```bash
 curl http://<host>:5000/health                              # backend directo (solo diagnóstico)
-curl <GATEWAY_URL>/api/resenas/evento/<eventoId-de-prueba>  # a través del Gateway
+curl <GATEWAY_URL>/api/resenas/evento/evt-101               # a través del Gateway
 ```
 
 ---
 
-## 6. Usuarios de prueba
+## 6. Usuarios de prueba (desde `seed.sql`)
 
-| Usuario (Auth) | Rol | Uso en este módulo |
+| Usuario seed local | Estado | Uso en este módulo |
 |---|---|---|
-| COMPLETAR (jueves) | cliente | Ver y publicar reseñas |
-| COMPLETAR (jueves) | organizador | Responder reseñas de su evento |
-| COMPLETAR (jueves) | COMPLETAR (otro rol) | Comprobar que es rechazado en acciones no permitidas |
+| `ana.lopez@tec.mx` (id local: 1) | cuenta seed local | Datos de ejemplo; no se vincula automáticamente a Auth |
+| `carlos.ramirez@tec.mx` (id local: 2) | cuenta seed local | Datos de ejemplo; su identidad Auth requiere asociación verificada |
+| `maria.gonzalez@tec.mx` (id local: 3) | cuenta seed local | Datos de ejemplo; su identidad Auth requiere asociación verificada |
 
-Datos de prueba en `seed.sql`: eventos como `evt-101` (COMPLETAR: confirmar ids reales tras `seed.sql`) con usuarios, asistencias y reseñas de ejemplo.
+Datos de prueba en `seed.sql`:
+- **Eventos:** `evt-101` (Taller de IA, organizador id=1), `evt-102` (Ciberseguridad, organizador id=1), `evt-103` (Hackathon, organizador id=2)
+- **Asistencias:** Usuario 1 → evt-101, evt-102; Usuario 2 → evt-101
+- **Reseñas existentes:** 3 reseñas (ids 1, 2, 3) en evt-101 y evt-102
 
 ---
 
 ## 7. Flujo principal del módulo
 
-1. Abrir el front en `http://<host>:3000` e iniciar sesión con Auth como cliente (COMPLETAR: pantalla o ruta de login).
+1. Abrir el front en `http://<host>:3000` e iniciar sesión con Auth con una cuenta de rol `usuario`.
 2. Abrir las reseñas de un evento: `/catalogo/evt-101/resenas`.
 3. Ver el listado de reseñas (más reciente primero) y el promedio del evento.
-4. Publicar una reseña con estrellas (1 a 5) y comentario opcional. Requiere que **Check-in** confirme la asistencia del usuario a ese evento (COMPLETAR: usuario y evento de prueba con asistencia registrada en Check-in).
+4. Publicar una reseña con estrellas (1 a 5) y comentario opcional. Requiere que **Check-in** confirme la asistencia para el UUID de Auth. Las asistencias seed con IDs numéricos no demuestran asistencia para una cuenta Auth.
+5. La respuesta del organizador requiere que el UUID autenticado esté asociado al propietario del evento. Esa asociación aún debe integrarse desde Catálogo o acordarse entre equipos.
 
-> Si Check-in o Catálogo no responden, el backend **falla de forma cerrada** (no permite publicar y devuelve 503 con un mensaje comprensible). Los pasos 1 a 3 funcionan sin esas dependencias.
+> Si Auth no responde, las rutas protegidas fallan de forma cerrada. Las lecturas públicas de reseñas siguen disponibles; publicar requiere Auth, Catálogo y la consulta contractual de Check-in.
 
 ---
 
-## 8. Notas
+## 8. Endpoints principales (Backend)
 
-- Logs del backend (cada petición queda con fecha y hora): `docker compose logs -f ms-resenas` en `code/backend`.
-- Pruebas automáticas del backend: `npm test` en `code/backend`.
+### Rutas `/api/resenas` (principales)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/health` | Health check con verificación de BD |
+| GET | `/me` | Obtener el perfil de Auth (requiere sesión) |
+| GET | `/eligibilidad` | Verificar si la sesión puede reseñar un evento (query: `eventoId`) |
+| POST | `/` | Crear una reseña (requiere sesión Auth; body: `id_evento`, `clasificacion`, `descripcion?`) |
+| GET | `/` | Listar reseñas con filtros opcionales |
+| GET | `/promedio` | Obtener promedio de calificaciones de un evento (query: `eventoId`) |
+| GET | `/evento/:eventoId` | Obtener reseñas y promedio de un evento (paginado: `pagina`, `tamano`) |
+| POST | `/:idResena/respuestas` | Crear respuesta (sesión Auth de organizador y propiedad validada) |
+
+### Rutas `/api/v1/resenas` (para Catálogo)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/calificaciones-basicas` | Obtener promedio y total de reseñas para múltiples eventos (máx. 100, body: `eventoIds[]`) |
+| GET | `/evento/:eventoId` | Obtener reseñas y promedio de un evento (formato V1 para Catálogo) |
+
+---
+
+## 9. Eventos RabbitMQ (I3)
+
+El backend publica el evento `resena.creada` en el exchange `ticketu.events` (tipo `topic`) tras guardar una reseña.
+
+**Esquema del mensaje:**
+
+```json
+{
+  "resenaId": "21",
+  "eventoId": "evt-101",
+  "usuarioId": "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a",
+  "calificacion": 5,
+  "fecha": "2026-11-19T10:30:00Z"
+}
+```
+
+Configuración: `BROKER_URL`, `EVENT_EXCHANGE` (por defecto `ticketu.events`). Si RabbitMQ no está disponible, la reseña se guarda igual y el error queda en el log con reintento automático de conexión.
+
+---
+
+## 10. Notas
+
+- **Logs del backend** (cada petición queda con fecha y hora): `docker compose logs -f ms-resenas` en `code/backend`.
+- **Pruebas automáticas del backend**: `npm test` en `code/backend`.
+- **Auth**: Reseñas valida las operaciones protegidas consultando `/internal/validar-sesion` directamente; requiere `AUTH_INTERNAL_API_KEY` y que el Gateway conserve la cookie `jwt`.
+- **Roles esperados**: `usuario` (publicar reseñas), `organizador` (responder si se valida la propiedad del evento). Otros roles reciben 403.
+- **Validación de elegibilidad**: El backend consulta directamente `GET http://checkin-service:3005/api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}` dentro de Docker. La rama `integracion` responde `{"asistio": true|false}` y no valida un token de servicio en esta ruta; mantenla accesible solo desde la red de confianza.
+- **Consulta a Catálogo**: El backend consulta a Catálogo vía `GET /api/catalogo/eventos/{eventoId}/info-servicio` para validar que el evento existe al crear una reseña.
