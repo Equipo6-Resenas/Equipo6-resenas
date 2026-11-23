@@ -2,336 +2,727 @@ openapi: 3.0.3
 info:
   title: API de Reseñas
   description: |
-    API correspondiente al modulo de Reseñas.
+    API correspondiente al módulo de Reseñas (Equipo 6 - TITEC 2026-2).
 
-    El modulo permite:
-    - Crear reseñas de eventos.
-    - Consultar reseñas de un evento, ordenadas de la mas reciente a la más antigua.
-    - Reportar una reseña y eliminarla (organizador del evento).
-    - Responder públicamente una reseña (organizador del evento).
-    - Obtener el promedio de clasificacion y la cantidad total de reseñas de un evento.
+    El módulo permite:
+    - Crear reseñas de eventos (requiere sesión Auth + asistencia verificada en Check-in).
+    - Consultar reseñas de un evento, ordenadas de la más reciente a la más antigua.
+    - Responder públicamente una reseña (organizador del evento, valida propiedad).
+    - Obtener el promedio de clasificación y la cantidad total de reseñas de un evento.
+    - Verificar elegibilidad para reseñar antes de mostrar el formulario.
 
-    Integracion con otros modulos:
+    Integración con otros módulos:
 
-    Catalogo:
-    - Proporciona el Id_evento para identificar el evento.
-    - Consulta el resumen de reseñas para mostrar el promedio
-      y cantidad de reseñas en la informacion del evento.
-    - Cuando el usuario selecciona "Ver reseñas", consulta
-      las reseñas correspondientes a ese evento.
+    **Catálogo (I-2, I-3):**
+    - Reseñas consume `GET /api/catalogo/eventos/{eventoId}/info-servicio` para validar existencia del evento.
+    - Catálogo consume `GET /api/resenas/evento/{eventoId}` (I-3 principal) y `GET /api/v1/resenas/evento/{eventoId}` para mostrar promedio y listado.
 
-    Check-in:
-    - Proporciona informacion para verificar que un usuario
-      asistio al evento antes de permitirle crear una reseña.
-  version: 1.1.1
+    **Check-in (I-1):**
+    - Reseñas consume `GET /api/checkin/asistencia?usuarioId={authUuid}&eventoId={id}` para verificar asistencia.
+
+    **Auth (I-1):**
+    - Reseñas valida sesión vía `GET /internal/validar-sesion` (cookie `jwt` + `x-api-key`).
+
+    **RabbitMQ (I-3):**
+    - Publica evento `resena.creada` en exchange `ticketu.events` (topic) tras crear reseña.
+  version: 2.0.0
 servers:
-  - url: https://virtserver.swaggerhub.com/university-645-9f5/TITEC/1.0.0
-    description: SwaggerHub API Auto Mocking
   - url: http://localhost:5000/api
-    description: Servidor local
+    description: Servidor local (backend directo)
+  - url: http://localhost:8080/api
+    description: Vía API Gateway (workstation)
 tags:
   - name: Reseñas
-    description: Operaciones relacionadas con reseñas de eventos
+    description: Operaciones principales del módulo de Reseñas
+  - name: "Reseñas v1 (Catálogo)"
+    description: Endpoints optimizados para consumo por Catálogo de Eventos
 paths:
+  # ============================================================
+  # RUTAS PRINCIPALES: /api/resenas
+  # ============================================================
+  /resenas/me:
+    get:
+      tags:
+        - Reseñas
+      summary: Obtener perfil de la sesión actual (validado por Auth)
+      description: |
+        Devuelve el UUID, nombre y rol del usuario autenticado.
+        Requiere cookie `jwt` válida (HttpOnly, enviada por el navegador con `credentials: include`).
+        El backend introspecciona la sesión contra Auth (`GET /internal/validar-sesion`).
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Perfil de usuario válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilUsuario'
+        '401':
+          description: Sesión inválida, expirada o ausente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Auth no disponible o integración no configurada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /resenas/health:
+    get:
+      tags:
+        - Reseñas
+      summary: Health check con verificación de base de datos
+      description: Verifica que el servicio y PostgreSQL están operativos.
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  modulo:
+                    type: string
+                    example: Resenas
+                  base_datos:
+                    type: string
+                    example: conectada
+                  db_hora:
+                    type: string
+                    format: date-time
+        '500':
+          description: Error de conexión a base de datos
+  /resenas/eligibilidad:
+    get:
+      tags:
+        - Reseñas
+      summary: Verificar si la sesión puede reseñar un evento
+      description: |
+        Comprueba: (1) rol = usuario, (2) evento existe en Catálogo, (3) usuario asistió según Check-in, (4) no tiene reseña previa.
+        Requiere sesión Auth válida.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: eventoId
+          in: query
+          description: Identificador del evento a verificar
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+            example: evt-101
+      responses:
+        '200':
+          description: Resultado de elegibilidad
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  puedeResenar:
+                    type: boolean
+                    example: true
+                  motivo:
+                    type: string
+                    enum: [null, "NO_ASISTIO", "YA_RESENO"]
+                    example: null
+        '400':
+          description: eventoId inválido o ausente
+        '401':
+          description: Sin sesión válida
+        '403':
+          description: Rol distinto de "usuario"
+        '503':
+          description: Catálogo o Check-in no disponibles
   /resenas:
     post:
       tags:
         - Reseñas
-      summary: Crear una reseña
+      summary: Crear una nueva reseña
       description: |
-        Crea una nueva reseña para un evento.
-
-        Para crear una reseña se debe verificar:
-        - Que el usuario exista.
-        - Que el evento exista.
-        - Que el usuario haya asistido al evento mediante Check-in.
-        - Que el usuario no tenga otra reseña para el mismo evento.
+        Crea una reseña para un evento tras validar:
+        - Sesión Auth válida (rol `usuario`)
+        - Evento existe en Catálogo (`GET /info-servicio`)
+        - Usuario asistió según Check-in (`GET /asistencia`)
+        - No existe reseña previa del usuario para ese evento
+      security:
+        - cookieAuth: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CrearResena'
-        required: true
+              $ref: '#/components/schemas/CrearResenaRequest'
       responses:
         '201':
           description: Reseña creada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resena'
+                $ref: '#/components/schemas/ResenaResponse'
         '400':
-          description: Datos invalidos
+          description: Datos inválidos (clasificación 1-5, descripcion máx 200, eventoId requerido)
+        '401':
+          description: Sin sesión válida
         '403':
-          description: El usuario no asistio al evento
+          description: Usuario no asistió al evento (Check-in) o rol no es "usuario"
         '404':
-          description: Usuario o evento no encontrado
+          description: Evento no encontrado en Catálogo
         '409':
-          description: El usuario ya realizo una reseña para este evento
-  /resenas/{numResena}:
+          description: El usuario ya reseñó este evento
+        '503':
+          description: Catálogo o Check-in no disponibles (falla cerrada)
     get:
       tags:
         - Reseñas
-      summary: Obtener una reseña especifica
-      description: Obtiene una reseña mediante su identificador.
+      summary: Listar reseñas con filtros opcionales
+      description: |
+        Endpoint público (no requiere sesión). Permite filtrar por usuario, evento y clasificación.
+        Devuelve reseñas con nombre de usuario, nombre de evento y respuesta del organizador si existe.
       parameters:
-        - name: numResena
-          in: path
-          description: Identificador unico de la reseña.
-          required: true
+        - name: id_usuario
+          in: query
+          description: Filtrar por ID de usuario (local o UUID Auth)
+          schema:
+            type: string
+            example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+        - name: id_evento
+          in: query
+          description: Filtrar por ID de evento
+          schema:
+            type: string
+            maxLength: 64
+            example: evt-101
+        - name: clasificacion
+          in: query
+          description: Filtrar por clasificación (1-5)
           schema:
             type: integer
-            example: 101
+            minimum: 1
+            maximum: 5
+            example: 5
       responses:
         '200':
-          description: Reseña encontrada
+          description: Lista de reseñas (puede ser vacía)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resena'
-        '404':
-          description: Reseña no encontrada
-    put:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResenaListItem'
+        '400':
+          description: Parámetros inválidos
+  /resenas/promedio:
+    get:
       tags:
         - Reseñas
-      summary: Modificar una reseña
+      summary: Obtener promedio de calificaciones de un evento
       description: |
-        Permite modificar la clasificacion y/o descripcion
-        de una reseña existente.
+        Endpoint público. Devuelve el promedio (1 decimal) y total de reseñas de un evento.
       parameters:
-        - name: numResena
+        - name: id_evento
+          in: query
+          description: Identificador del evento
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+            example: evt-101
+      responses:
+        '200':
+          description: Promedio y total
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  promedio:
+                    type: number
+                    format: float
+                    minimum: 0
+                    maximum: 5
+                    nullable: true
+                    example: 4.3
+        '400':
+          description: id_evento inválido o ausente
+  /resenas/evento/{eventoId}:
+    get:
+      tags:
+        - Reseñas
+      summary: Obtener reseñas y promedio de un evento (paginado) — **I-3 Principal**
+      description: |
+        Endpoint principal consumido por Catálogo para mostrar reseñas en el detalle del evento.
+        Devuelve promedio global, total, paginación y lista ordenada (más reciente primero).
+        **No valida existencia del evento** (Catálogo debe validar antes vía I-2).
+      parameters:
+        - name: eventoId
           in: path
-          description: Identificador unico de la reseña.
+          description: Identificador del evento
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+            example: evt-101
+        - name: pagina
+          in: query
+          description: Número de página (desde 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: tamano
+          in: query
+          description: Reseñas por página (máx 50)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: Reseñas y promedio del evento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResenasPorEventoResponse'
+        '400':
+          description: Parámetros inválidos (eventoId, pagina, tamano)
+  /resenas/{idResena}/respuestas:
+    post:
+      tags:
+        - Reseñas
+      summary: Crear respuesta pública a una reseña (organizador)
+      description: |
+        Permite al organizador del evento responder a una reseña.
+        Valida: (1) sesión Auth con rol `organizador`, (2) el UUID del organizador coincide con `id_organizador` del evento en BD.
+        Requiere cookie `jwt` válida.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: idResena
+          in: path
+          description: ID numérico de la reseña
           required: true
           schema:
             type: integer
-            example: 101
+            minimum: 1
+            example: 21
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ModificarResena'
-        required: true
+              type: object
+              required:
+                - texto
+              properties:
+                texto:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                  description: Texto de la respuesta
+                  example: "Gracias por tu reseña, tomamos nota de tus comentarios."
       responses:
-        '200':
-          description: Reseña modificada correctamente
+        '201':
+          description: Respuesta creada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resena'
+                $ref: '#/components/schemas/ResenaRespuestaResponse'
         '400':
-          description: Datos invalidos
+          description: Texto vacío, muy largo o idResena inválido
+        '401':
+          description: Sin sesión válida
         '403':
-          description: El usuario no tiene permiso para modificar esta reseña
+          description: No es organizador del evento o rol no es "organizador"
         '404':
-          description: Reseña no encontrada
-    delete:
+          description: Reseña o evento no encontrado
+
+  # ============================================================
+  # RUTAS V1 PARA CATÁLOGO: /api/v1/resenas
+  # ============================================================
+  /v1/resenas/calificaciones-basicas:
+    post:
       tags:
-        - Reseñas
-      summary: Eliminar una reseña
-      description: Elimina una reseña existente.
+        - "Reseñas v1 (Catálogo)"
+      summary: Obtener promedio y total para múltiples eventos (máx 100)
+      description: |
+        Endpoint optimizado para Catálogo: consulta en lote el promedio y total de reseñas
+        para una lista de eventos. Útil para listados de eventos con sus calificaciones.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lista_id_eventos
+              properties:
+                lista_id_eventos:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: string
+                    maxLength: 64
+                  example: ["evt-101", "evt-102", "evt-103"]
+      responses:
+        '200':
+          description: Mapa de eventoId → {promedio, total_resenas}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  calificaciones:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        promedio:
+                          type: number
+                          format: float
+                          nullable: true
+                        total_resenas:
+                          type: integer
+                          minimum: 0
+        '400':
+          description: lista_id_eventos inválida (vacía, >100, IDs malformados)
+  /v1/resenas/evento/{eventoId}:
+    get:
+      tags:
+        - "Reseñas v1 (Catálogo)"
+      summary: Obtener reseñas y promedio de un evento (formato V1 para Catálogo)
+      description: |
+        Versión alternativa del endpoint principal con formato de respuesta adaptado para Catálogo.
+        Campos en snake_case y nombres ligeramente distintos.
       parameters:
-        - name: numResena
+        - name: eventoId
           in: path
-          description: Identificador unico de la reseña.
+          description: Identificador del evento
           required: true
+          schema:
+            type: string
+            maxLength: 64
+            example: evt-101
+        - name: pagina
+          in: query
+          description: Número de página (desde 1)
           schema:
             type: integer
-            example: 101
-      responses:
-        '204':
-          description: Reseña eliminada correctamente
-        '403':
-          description: El usuario no tiene permiso para eliminar esta reseña
-        '404':
-          description: Reseña no encontrada
-  /eventos/{idEvento}/resumen-resenas:
-    get:
-      tags:
-        - Reseñas
-      summary: Obtener resumen de reseñas de un evento
-      description: |
-        Devuelve la informacion resumida de las reseñas de un evento.
-
-        Esta informacion es utilizada por el modulo Catalogo
-        para mostrar la clasificacion promedio y la cantidad
-        total de reseñas junto a la informacion del evento.
-
-        Ejemplo de visualizacion:
-
-        4.5 (128 reseñas)
-      parameters:
-        - name: idEvento
-          in: path
-          description: Identificador del evento.
-          required: true
+            minimum: 1
+            default: 1
+        - name: tamano
+          in: query
+          description: Reseñas por página (máx 50)
           schema:
-            type: string
-            example: evt-101
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
       responses:
         '200':
-          description: Resumen de reseñas obtenido correctamente
+          description: Reseñas y promedio (formato V1)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResumenResenas'
-        '404':
-          description: Evento sin reseñas o evento no encontrado
-  /eventos/{idEvento}/resenas:
-    get:
-      tags:
-        - Reseñas
-      summary: Obtener reseñas de un evento
-      description: |
-        Devuelve todas las reseñas asociadas a un evento.
+                $ref: '#/components/schemas/ResenasPorEventoV1Response'
+        '400':
+          description: Parámetros inválidos
 
-        Este endpoint es utilizado cuando el usuario selecciona
-        la opcion "Ver reseñas" desde el modulo Catalogo.
-
-        Ademas de las reseñas individuales, se devuelve el
-        promedio y la cantidad total de reseñas.
-      parameters:
-        - name: idEvento
-          in: path
-          description: Identificador del evento.
-          required: true
-          schema:
-            type: string
-            example: evt-101
-      responses:
-        '200':
-          description: Reseñas del evento obtenidas correctamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DetalleResenas'
-        '404':
-          description: Evento no encontrado
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt
+      description: |
+        Cookie HttpOnly `jwt` entregada por Auth al hacer login.
+        El navegador la envía automáticamente con `credentials: "include"`.
+        El backend la reenvía a Auth para introspección (`GET /internal/validar-sesion`).
+
   schemas:
-    CrearResena:
-      required:
-        - clasificacion
-        - id_evento
-        - id_usuario
+    # --- Requests ---
+    CrearResenaRequest:
       type: object
+      required:
+        - id_evento
+        - clasificacion
       properties:
-        id_usuario:
-          type: integer
-          description: |
-            Identificador del usuario.
-            Se utiliza junto con Check-in para verificar
-            la asistencia al evento.
-          example: 58
         id_evento:
           type: string
-          description: |
-            Identificador del evento obtenido desde Catalogo.
+          maxLength: 64
+          description: Identificador del evento (obtenido desde Catálogo)
           example: evt-101
         clasificacion:
-          maximum: 5
-          minimum: 1
           type: integer
-          description: |
-            Clasificacion otorgada al evento.
-            El valor debe estar entre 1 y 5.
+          minimum: 1
+          maximum: 5
+          description: Clasificación del 1 al 5
           example: 5
         descripcion:
+          type: string
           maxLength: 200
           minLength: 0
-          type: string
-          description: Comentario realizado por el usuario.
-          example: Excelente evento, muy buena organizacion.
-    ModificarResena:
+          description: Comentario opcional
+          example: "Excelente evento, muy buena organización."
+
+    # --- Responses ---
+    PerfilUsuario:
       type: object
       properties:
-        clasificacion:
-          maximum: 5
-          minimum: 1
-          type: integer
-          description: Nueva clasificacion de la reseña.
-          example: 4
-        descripcion:
-          maxLength: 200
-          minLength: 0
-          type: string
-          description: Nueva descripcion de la reseña.
-          example: El evento estuvo muy bueno.
-    Resena:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: UUID de Auth
+              example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+            name:
+              type: string
+              example: "Juan Pérez"
+            role:
+              type: string
+              enum: [usuario, organizador, staff]
+              example: "usuario"
+
+    ResenaResponse:
       type: object
       properties:
-        num_reseña:
+        num_resena:
           type: integer
-          description: Identificador unico de la reseña.
-          example: 101
-        clasificacion:
-          maximum: 5
-          minimum: 1
-          type: integer
-          description: Clasificacion otorgada al evento.
-          example: 4
-        descripcion:
-          type: string
-          description: Comentario realizado por el usuario.
-          example: Excelente evento, muy buena organizacion.
-        id_evento:
-          type: string
-          description: Identificador del evento.
-          example: evt-101
+          description: ID autoincremental de la reseña
+          example: 21
         id_usuario:
-          type: integer
-          description: Identificador del usuario.
-          example: 58
+          type: string
+          description: UUID de Auth del autor
+          example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
         nombre_usuario:
           type: string
-          description: Nombre del usuario obtenido desde Check-in.
-          example: Juan Perez
-    ResumenResenas:
-      type: object
-      properties:
+          example: "Juan Pérez"
         id_evento:
           type: string
-          description: Identificador del evento.
-          example: evt-101
-        promedio:
-          maximum: 5
-          minimum: 0
-          type: number
-          description: |
-            Promedio de todas las clasificaciones realizadas
-            para el evento.
-          format: float
-          example: 4.5
-        total_reseñas:
-          minimum: 0
+          example: "evt-101"
+        nombre_evento:
+          type: string
+          example: "Taller de IA"
+        fecha_evento:
+          type: string
+          format: date-time
+          example: "2026-10-15T18:00:00Z"
+        clasificacion:
           type: integer
-          description: Cantidad total de reseñas del evento.
-          example: 128
-    DetalleResenas:
+          minimum: 1
+          maximum: 5
+          example: 5
+        descripcion:
+          type: string
+          nullable: true
+          example: "Excelente evento"
+        fecha_reseña:
+          type: string
+          format: date-time
+          example: "2026-10-16T10:30:00Z"
+
+    ResenaListItem:
       type: object
+      properties:
+        num_resena:
+          type: integer
+          example: 21
+        id_usuario:
+          type: string
+          example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+        nombre_usuario:
+          type: string
+          example: "Juan Pérez"
+        id_evento:
+          type: string
+          example: "evt-101"
+        nombre_evento:
+          type: string
+          example: "Taller de IA"
+        clasificacion:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        descripcion:
+          type: string
+          nullable: true
+        fecha_reseña:
+          type: string
+          format: date-time
+        respuesta_texto:
+          type: string
+          nullable: true
+        respuesta_fecha:
+          type: string
+          format: date-time
+          nullable: true
+        nombre_responsable:
+          type: string
+          nullable: true
+
+    ResenasPorEventoResponse:
+      type: object
+      required:
+        - eventoId
+        - promedio
+        - totalResenas
+        - pagina
+        - tamano
+        - resenas
+      properties:
+        eventoId:
+          type: string
+          example: "evt-101"
+        promedio:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          nullable: true
+          description: Promedio global (todas las reseñas), 1 decimal
+          example: 4.3
+        totalResenas:
+          type: integer
+          minimum: 0
+          example: 12
+        pagina:
+          type: integer
+          minimum: 1
+          example: 1
+        tamano:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 20
+        resenas:
+          type: array
+          description: Ordenadas por fecha descendente (más reciente primero)
+          items:
+            type: object
+            properties:
+              resenaId:
+                type: string
+                example: "21"
+              usuarioId:
+                type: string
+                example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+              calificacion:
+                type: integer
+                minimum: 1
+                maximum: 5
+                example: 5
+              comentario:
+                type: string
+                nullable: true
+                example: "Excelente organización"
+              fecha:
+                type: string
+                format: date-time
+                example: "2026-10-16T10:30:00Z"
+
+    ResenasPorEventoV1Response:
+      type: object
+      required:
+        - id_evento
+        - promedio
+        - total_resenas
+        - pagina
+        - tamano
+        - resenas
       properties:
         id_evento:
           type: string
-          description: Identificador del evento.
-          example: evt-101
+          example: "evt-101"
         promedio:
-          maximum: 5
-          minimum: 0
           type: number
-          description: |
-            Promedio de todas las clasificaciones del evento.
           format: float
-          example: 4.5
-        reseñas:
+          nullable: true
+          example: 4.3
+        total_resenas:
+          type: integer
+          minimum: 0
+          example: 12
+        pagina:
+          type: integer
+          minimum: 1
+          example: 1
+        tamano:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 20
+        resenas:
           type: array
-          description: Lista de reseñas del evento.
           items:
-            $ref: '#/components/schemas/Resena'
-  parameters:
-    NumResena:
-      name: numResena
-      in: path
-      description: Identificador unico de la reseña.
-      required: true
-      schema:
-        type: integer
-        example: 101
+            type: object
+            properties:
+              resena_id:
+                type: string
+                example: "21"
+              usuario_id:
+                type: string
+                example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+              calificacion:
+                type: integer
+                minimum: 1
+                maximum: 5
+                example: 5
+              fecha:
+                type: string
+                format: date-time
+                example: "2026-10-16T10:30:00Z"
+              comentario:
+                type: string
+                nullable: true
+
+    ResenaRespuestaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: num_resena de la reseña respondida
+          example: 21
+        id_resena:
+          type: integer
+          example: 21
+        id_usuario:
+          type: string
+          description: UUID de Auth del organizador
+          example: "3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a"
+        texto:
+          type: string
+          example: "Gracias por tu reseña..."
+        fecha_respuesta:
+          type: string
+          format: date-time
+          example: "2026-10-17T09:00:00Z"
+        nombre_responsable:
+          type: string
+          example: "María González"
+
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: string
+          example: "SESION_INVALIDA"
+        mensaje:
+          type: string
+          example: "La sesión no es válida o expiró; inicia sesión nuevamente"
+        correlationId:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
