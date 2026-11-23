@@ -253,7 +253,7 @@
           "name": "2.6 POST /api/v1/resenas/calificaciones-basicas - Lote para Catálogo (público)",
           "request": {
             "method": "POST",
-            "url": "{{gateway_url}}/api/v1/resenas/calificaciones-basicas",
+            "url": "{{backend_url}}/api/v1/resenas/calificaciones-basicas",
             "header": [
               {
                 "key": "Content-Type",
@@ -285,7 +285,7 @@
           "name": "2.7 GET /api/v1/resenas/evento/{{evento_id}} - Formato V1 para Catálogo (público)",
           "request": {
             "method": "GET",
-            "url": "{{gateway_url}}/api/v1/resenas/evento/{{evento_id}}",
+            "url": "{{backend_url}}/api/v1/resenas/evento/{{evento_id}}",
             "header": [
               {
                 "key": "X-Correlation-Id",
@@ -402,7 +402,7 @@
           "name": "Health Check Backend directo",
           "request": {
             "method": "GET",
-            "url": "{{backend_url}}/api/resenas/health",
+            "url": "{{backend_url}}/health",
             "header": [
               {
                 "key": "Accept",
