@@ -1,23 +1,4 @@
 services:
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: ticketu-rabbitmq-resenas
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ticketu
-      RABBITMQ_DEFAULT_PASS: ticketu
-      RABBITMQ_DEFAULT_VHOST: ticketu
-    ports:
-      - "5680:5672"
-      - "15680:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - plataforma-eventos-net
-
   postgres-resenas:
     image: postgres:16-alpine
     container_name: postgres-resenas
@@ -59,8 +40,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-resenas}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
-      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://api-gateway:8080/api/catalogo}
-      API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://api-gateway:8080}
+      CATALOGO_SERVICE_URL: ${CATALOGO_SERVICE_DOCKER_URL:-http://ticketu-api-gateway:8080/api/catalogo}
+      API_GATEWAY_URL: ${API_GATEWAY_DOCKER_URL:-http://ticketu-api-gateway:8080}
       CHECKIN_SERVICE_URL: ${CHECKIN_SERVICE_DOCKER_URL:-http://checkin-service:3005/api/checkin}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_DOCKER_URL:-http://auth-service:10000}
       AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:-}
@@ -68,14 +49,12 @@ services:
       CATALOGO_TIMEOUT_MS: ${CATALOGO_TIMEOUT_MS:-2000}
       CHECKIN_TIMEOUT_MS: ${CHECKIN_TIMEOUT_MS:-2000}
       SERVICE_TO_SERVICE_TOKEN: ${SERVICE_TO_SERVICE_TOKEN:-}
-      BROKER_URL: amqp://ticketu:ticketu@rabbitmq:5672/ticketu
+      BROKER_URL: ${BROKER_DOCKER_URL:-amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu}
       EVENT_EXCHANGE: ticketu.events
     ports:
       - "5000:3000"
     depends_on:
       postgres-resenas:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     networks:
       plataforma-eventos-net:

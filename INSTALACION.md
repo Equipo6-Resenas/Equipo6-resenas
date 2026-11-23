@@ -53,8 +53,8 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 | `DB_HOST` / `DB_PORT` | Host y puerto de PostgreSQL (con Docker: `postgres-resenas` / `5432`, lo fija el compose) | automático con Docker |
 | `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Credenciales y base de datos | `postgres` / `postgres` / `resenas` |
 | `FRONTEND_ORIGIN` | Origen del front autorizado para CORS | `http://localhost:3000` |
-| `API_GATEWAY_DOCKER_URL` | Gateway visto desde dentro de los contenedores | `http://api-gateway:8080` |
-| `CATALOGO_SERVICE_DOCKER_URL` | Catálogo. **Debe apuntar al Gateway** (`<gateway>/api/catalogo`), no directo al contenedor de Catálogo | `http://api-gateway:8080/api/catalogo` |
+| `API_GATEWAY_DOCKER_URL` | Gateway visto desde dentro de los contenedores | `http://ticketu-api-gateway:8080` |
+| `CATALOGO_SERVICE_DOCKER_URL` | Catálogo. **Debe apuntar al Gateway** (`<gateway>/api/catalogo`), no directo al contenedor de Catálogo | `http://ticketu-api-gateway:8080/api/catalogo` |
 | `CHECKIN_SERVICE_URL` | Check-in desde el host local | `http://localhost:3005/api/checkin` |
 | `CHECKIN_SERVICE_DOCKER_URL` | Check-in directo por `plataforma-eventos-net` | `http://checkin-service:3005/api/checkin` |
 | `CATALOGO_TIMEOUT_MS` / `CHECKIN_TIMEOUT_MS` | Timeout de las llamadas a otros módulos | `2000` |
@@ -62,7 +62,7 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 | `AUTH_SERVICE_DOCKER_URL` | URL privada de Auth para introspección (no se llama por Gateway) | `http://auth-service:10000` |
 | `AUTH_INTERNAL_API_KEY` | Secreto compartido por entorno con Auth | configurarlo por canal seguro |
 | `AUTH_TIMEOUT_MS` | Timeout de validación de sesión | `1000` |
-| `BROKER_URL` | Conexión AMQP a RabbitMQ | `amqp://ticketu:ticketu@ticketu-rabbitmq:5672/ticketu` |
+| `BROKER_URL` | Conexión AMQP a RabbitMQ (credenciales Platform Team) | `amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu` |
 | `EVENT_EXCHANGE` | Exchange compartido | `ticketu.events` |
 
 > **Nota:** En `.env.example`, Catálogo continúa usando el Gateway. Check-in usa `CHECKIN_SERVICE_URL` desde el host (`localhost:3005`) y `CHECKIN_SERVICE_DOCKER_URL` desde Docker (`checkin-service:3005`).
@@ -85,7 +85,7 @@ Ninguna dirección ni credencial está fija en el código: todo se lee de variab
 | API Gateway | `8080` |
 | Backend Reseñas | `3000` dentro de la red Docker; publicado en el host como `5000` |
 | PostgreSQL de Reseñas | `5432` dentro de la red; `5433` publicado en el host (mapeo 5433:5432) |
-| RabbitMQ (AMQP / panel) | `5672` / `15672` |
+| RabbitMQ (compartido) | `5672` / `15672` (servicio `ticketu-rabbitmq` del Platform Team) |
 
 ---
 
@@ -106,7 +106,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-El compose levanta **PostgreSQL, RabbitMQ y el microservicio**. Ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `ms-resenas` / `resenas-service`. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`; el Gateway debe conservar la cookie de sesión. Levanta Check-in desde su propio repositorio en la misma red; Reseñas consulta su endpoint interno directamente, sin pasar por el Gateway. El Compose de Check-in también requiere `AUTH_SERVICE_URL` y `AUTH_INTERNAL_API_KEY` para arrancar; configúralos según el entorno.
+El compose levanta **PostgreSQL y el microservicio** (RabbitMQ ya no se levanta localmente; se usa el broker compartido `ticketu-rabbitmq:5672` del Platform Team). Ejecuta automáticamente `src/database/schema.sql` (creación de tablas) y `src/database/seed.sql` (datos iniciales) la primera vez. El servicio queda en la red como `ms-resenas` / `resenas-service`. Auth debe estar conectado a `plataforma-eventos-net` con el alias `auth-service`; el Gateway debe conservar la cookie de sesión. Levanta Check-in desde su propio repositorio en la misma red; Reseñas consulta su endpoint interno directamente, sin pasar por el Gateway. El Compose de Check-in también requiere `AUTH_SERVICE_URL` y `AUTH_INTERNAL_API_KEY` para arrancar; configúralos según el entorno.
 
 Si el volumen de PostgreSQL ya existía antes de agregar `auth_uuid`, aplica la migración sin borrar los datos:
 

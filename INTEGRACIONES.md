@@ -97,7 +97,7 @@ La clave compartida debe entregarse por canal seguro. El endpoint interno no deb
 }
 ```
 
-- **Configuración:** `BROKER_URL` (`amqp://ticketu:ticketu@ticketu-rabbitmq:5672/ticketu`) y `EVENT_EXCHANGE` (`ticketu.events`) por variables de entorno.
+- **Configuración:** `BROKER_URL` (`amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu`) y `EVENT_EXCHANGE` (`ticketu.events`) por variables de entorno (credenciales Platform Team).
 - **Fallos:** si RabbitMQ no está disponible, la reseña se guarda igual, la aplicación no falla y el error queda en el log. Manejo en `code/backend/src/services/broker.service.js` (try/catch de conexión y publicación, con reintento de conexión automático).
 
 **Cómo verificarlo en workstation**

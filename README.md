@@ -77,12 +77,12 @@ Configuración: `BROKER_URL`, `EVENT_EXCHANGE` (por defecto `ticketu.events`), `
 2. En `code/backend`, configurar `.env` (copiar `.env.example`) con la URL interna del Gateway para contenedores:
 
    ```env
-   API_GATEWAY_DOCKER_URL=http://api-gateway:8080
-   CATALOGO_SERVICE_DOCKER_URL=http://catalogo-service:3000
-   CHECKIN_SERVICE_DOCKER_URL=http://api-gateway:8080/api/checkin
+   API_GATEWAY_DOCKER_URL=http://ticketu-api-gateway:8080
+   CATALOGO_SERVICE_DOCKER_URL=http://ticketu-api-gateway:8080/api/catalogo
+   CHECKIN_SERVICE_DOCKER_URL=http://checkin-service:3005/api/checkin
    AUTH_SERVICE_DOCKER_URL=http://auth-service:10000
    AUTH_INTERNAL_API_KEY=<configurar por canal seguro>
-   BROKER_DOCKER_URL=amqp://ticketu:ticketu@rabbitmq:5672/ticketu
+   BROKER_DOCKER_URL=amqp://ticketu:ticketu_dev@ticketu-rabbitmq:5672/ticketu
    EVENT_EXCHANGE=ticketu.events
    ```
 
