@@ -1,0 +1,2437 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "reseñas-entrega4-integraciones"
+    },
+    "item": [
+      {
+        "id": "97a3fadb-4243-4f80-81e9-3d256083a2cf",
+        "name": "I1 - Auth: Validación de Sesión",
+        "description": {
+          "content": "Pruebas de la integración I1 (Auth). El navegador envía cookie `jwt` HttpOnly; el backend la reenvía a Auth con `x-api-key` para introspección.",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "d9cc8cdc-df0f-4915-9d23-1221a31a02eb",
+            "name": "1.1 GET /api/resenas/me - Con sesión válida (via Gateway)",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` válida. En workstation: Auth service NO está en la red plataforma-eventos-net (responsabilidad Platform Team). Esperado: 401 INVALID_REQUEST",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "me"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "e5232516-9e08-430d-8242-761c1596181e",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 Unauthorized (Auth not in workstation network)', function () { pm.response.to.have.status(401); });",
+                    "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                    "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                    "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                  ],
+                  "_lastExecutionId": "5b9b806e-805a-4ca0-b446-96b3a763eb9b"
+                }
+              }
+            ]
+          },
+          {
+            "id": "ebfff805-726e-4483-9b82-050a23fa4a1d",
+            "name": "1.2 GET /api/resenas/me - Sin cookie (debe dar 401)",
+            "request": {
+              "description": {
+                "content": "Sin enviar cookie `jwt`. Debe responder 401 con código INVALID_REQUEST",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "me"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "54b78cfb-4c50-4dfa-8671-5e0c58acd078",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 Unauthorized', function () { pm.response.to.have.status(401); });",
+                    "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                    "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                    "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                  ],
+                  "_lastExecutionId": "15b25c5d-14bb-4371-b31f-53d8ed6022aa"
+                }
+              }
+            ]
+          },
+          {
+            "id": "8cb7df37-656d-4ad4-a813-3bda23d275bd",
+            "name": "1.3 POST /api/resenas - Con rol organizador (debe dar 403)",
+            "request": {
+              "description": {
+                "content": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Prueba rol organizador\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0ce312b3-65a5-40cd-8328-92f0744ec664",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                    "pm.test('Error code is INVALID_REQUEST or 403 message', function () { const r = pm.response.json(); if (pm.response.code === 401) { pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } else { pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });"
+                  ],
+                  "_lastExecutionId": "a46b8356-6e19-469a-ae5f-664d180c25fd"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "a483db60-a48d-413b-9faa-eb26bc1a8133",
+        "name": "I2 - Catálogo: Consumo y Provisión",
+        "description": {
+          "content": "Pruebas de la integración I2 (Catálogo). Reseñas CONSUME Catálogo para validar evento (GET /info-servicio). Catálogo CONSUME Reseñas para mostrar promedio y listado (GET /evento/{eventoId}).",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "266a2658-fd42-467e-9581-1970d7862035",
+            "name": "2.1 GET /api/resenas/eligibilidad - Con sesión usuario (via Gateway)",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` de rol 'usuario'. Valida: (1) rol usuario, (2) evento existe en Catálogo, (3) asistencia en Check-in, (4) sin reseña previa. Esperado: 200 { puedeResenar: true/false, motivo }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "eligibilidad"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "483cd988-0ed2-492f-b2b5-3a3045fcaeeb",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 or 401/403/503', function () { pm.expect([200, 401, 403, 503]).to.include(pm.response.code); });",
+                    "pm.test('If 200: has puedeResenar boolean', function () { if (pm.response.code === 200) { const r = pm.response.json(); pm.expect(r).to.have.property('puedeResenar').that.is.a('boolean'); pm.expect(r).to.have.property('motivo').that.is.oneOf([null, 'NO_ASISTIO', 'YA_RESENO']); } });",
+                    "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: rol no es usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });",
+                    "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "863cca0f-0e66-4b0f-b6e1-090ee4750d10",
+            "name": "2.2 GET /api/resenas/eligibilidad - Evento inexistente (debe dar 404/503)",
+            "request": {
+              "description": {
+                "content": "Evento que no existe en Catálogo. Backend llama a Catálogo y recibe 404 → Reseñas responde 503 o 404 según contrato",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "eligibilidad"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "f3510158-34f7-4e6f-bc41-1abef5d71de5",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 404 or 503 or 401', function () { pm.expect([404, 503, 401]).to.include(pm.response.code); });",
+                    "pm.test('Error message indicates evento no existe or similar', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.be.a('string').and.is.not.empty; });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "26dafabd-cf54-4e4e-a7a0-aaa1184644e7",
+            "name": "2.3 GET /api/resenas/evento/{{evento_id}} - I-3 Principal (público, via Gateway)",
+            "request": {
+              "description": {
+                "content": "Endpoint principal I-3 consumido por Catálogo. NO requiere sesión. Devuelve: promedio (1 decimal), totalResenas, pagina, tamano, resenas[] ordenadas por fecha DESC. Seed tiene 5 reseñas en evt-101 (promedio 4.6).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "03485489-2715-4c0a-89ad-c68396500134",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });",
+                    "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                    "pm.test('totalResenas is integer >= 0', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.be.a('number').and.to.be.gte(0); });",
+                    "pm.test('resenas is array', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array'); });",
+                    "pm.test('resenas have required fields', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                    "pm.test('resenas ordered by fecha DESC', function () { const r = pm.response.json(); for (let i=1; i<r.resenas.length; i++) { pm.expect(new Date(r.resenas[i-1].fecha)).to.be.at.least(new Date(r.resenas[i].fecha)); } });",
+                    "pm.test('X-Correlation-Id present in response', function () { pm.expect(pm.response.headers.get('X-Correlation-Id')).to.be.a('string'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "85c4c70b-dd5d-4a4a-a26b-56f7145d4490",
+            "name": "2.4 GET /api/resenas/evento/evt-103 - Evento sin reseñas (público)",
+            "request": {
+              "description": {
+                "content": "evt-103 existe en seed con 4 reseñas (promedio 4.25). Esperado: 200 { promedio: 4.25, totalResenas: 4, resenas: [...] }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "evt-103"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "82d2e848-01e4-4756-a92a-da9dc5471717",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('promedio is 4.3 (4.25 rounded to 1 decimal)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.3); });",
+                    "pm.test('totalResenas is 4', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.equal(4); });",
+                    "pm.test('resenas has 4 items', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(4); });",
+                    "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "b4cb4de4-b38a-4dab-8c31-d1281e5c918d",
+            "name": "2.5 GET /api/resenas/evento/{{evento_id}}?tamano=500 - Parámetro inválido (400)",
+            "request": {
+              "description": {
+                "content": "tamano > 50 (máximo permitido). Debe responder 400 con mensaje comprensible",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "pagina",
+                    "value": "1"
+                  },
+                  {
+                    "key": "tamano",
+                    "value": "500"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "cb598017-5b89-491e-acb0-79be22b6c052",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                    "pm.test('Error message mentions tamano', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.match(/tamano|tamaño|size|máx/i); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "d7a1f967-79a1-43ec-8426-b40ca5a14a4b",
+            "name": "2.6 POST /api/v1/resenas/calificaciones-basicas - Lote para Catálogo (público)",
+            "request": {
+              "description": {
+                "content": "Endpoint V1 optimizado para Catálogo: consulta en lote promedio y total. Máx 100 eventos. No requiere sesión.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "resenas",
+                  "calificaciones-basicas"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"lista_id_eventos\": [\"evt-101\", \"evt-102\", \"evt-103\"]\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "415e51e0-c29b-44ab-b451-edbee7218838",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has calificaciones object', function () { const r = pm.response.json(); pm.expect(r).to.have.property('calificaciones').that.is.an('object'); });",
+                    "pm.test('calificaciones has evt-101, evt-102, evt-103', function () { const r = pm.response.json(); pm.expect(r.calificaciones).to.have.keys('evt-101','evt-102','evt-103'); });",
+                    "pm.test('Each event has promedio and total_resenas', function () { const r = pm.response.json(); Object.values(r.calificaciones).forEach(v => { pm.expect(v).to.have.property('promedio'); pm.expect(v).to.have.property('total_resenas').that.is.a('number').and.gte(0); }); });",
+                    "pm.test('evt-101 has 5 reseñas in seed', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-101'].total_resenas).to.equal(5); pm.expect(r.calificaciones['evt-101'].promedio).to.equal(4.6); });",
+                    "pm.test('evt-103 has 4 reseñas', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-103'].total_resenas).to.equal(4); pm.expect(r.calificaciones['evt-103'].promedio).to.equal(4.3); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "2c4fc467-9cf1-41c5-8bb0-313a671716fd",
+            "name": "2.7 GET /api/v1/resenas/evento/{{evento_id}} - Formato V1 para Catálogo (público)",
+            "request": {
+              "description": {
+                "content": "Versión alternativa con snake_case en respuesta (id_evento, total_resenas, resena_id, usuario_id, calificacion, fecha, comentario).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "5f91e881-63eb-4992-9c12-11c736088b49",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Response uses snake_case fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('id_evento','promedio','total_resenas','pagina','tamano','resenas'); });",
+                    "pm.test('resenas items use snake_case', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resena_id','usuario_id','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                    "pm.test('Data matches main I-3 endpoint', function () { const r = pm.response.json(); pm.expect(r.id_evento).to.equal('evt-101'); pm.expect(r.total_resenas).to.equal(5); pm.expect(r.promedio).to.equal(4.6); });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "da7a7075-090f-4f86-9423-4d421212da9d",
+        "name": "I3 - RabbitMQ: Publicación evento resena.creada",
+        "description": {
+          "content": "Pruebas de la integración I3 (Broker). Tras crear una reseña (POST /api/resenas), el backend publica evento `resena.creada` en exchange `ticketu.events` (topic). Verificar en RabbitMQ Management UI: http://localhost:15672 (user: ticketu, pass: ticketu, vhost: ticketu).",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "181f94b3-eca7-474a-a189-737168a13d7c",
+            "name": "3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)",
+            "request": {
+              "description": {
+                "content": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "e836736e-719d-499b-b4c2-bb70f13091e6",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 201 Created or 401/403/409/503', function () { pm.expect([201, 401, 403, 409, 503]).to.include(pm.response.code); });",
+                    "pm.test('If 201: returns created reseña with all fields', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento', 'evt-101'); pm.expect(r).to.have.property('clasificacion', 5); pm.expect(r).to.have.property('fecha_reseña'); pm.collectionVariables.set('created_resena_id', r.num_resena); } });",
+                    "pm.test('If 401: INVALID_REQUEST (Auth not in network)', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: NO_ASISTIO or rol no usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });",
+                    "pm.test('If 409: YA_RESENO', function () { if (pm.response.code === 409) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('ya'); } });",
+                    "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "ca3453fa-b312-4ff5-bd42-4afbba7e3995",
+            "name": "3.2 Verificar en BD - Última reseña insertada",
+            "request": {
+              "description": {
+                "content": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "pagina",
+                    "value": "1"
+                  },
+                  {
+                    "key": "tamano",
+                    "value": "1"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "56cc3f86-05af-448b-816b-8eb3d50a4a34",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has resenas array with 1 item', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(1); });",
+                    "pm.test('Resena has expected fields', function () { const r = pm.response.json(); const resena = r.resenas[0]; pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); pm.expect(r.eventoId).to.equal('evt-101'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "e24b05b5-3047-4414-b24f-aa2801b62a05",
+            "name": "3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)",
+            "request": {
+              "description": {
+                "content": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "1942b442-dcbc-44bd-93af-dc310e17c83b",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Health reports base_datos: conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('status', 'OK'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "bd10312e-732d-4486-9793-1a8f4060ab69",
+            "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+            "request": {
+              "description": {
+                "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+                "type": "text/plain"
+              },
+              "url": {
+                "protocol": "http",
+                "port": "15672",
+                "host": [
+                  "localhost"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "28c2087f-45c7-4a2a-b8ef-08b8999459b5",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "f1a53bcb-6b05-4f2e-a834-2584aa0937de",
+        "name": "Utilitarios y Health Checks",
+        "description": {
+          "content": "Endpoints de apoyo para diagnóstico y verificación de estado de servicios en workstation.",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "d747c75e-65cd-460e-8d05-031fab259de2",
+            "name": "Health Check Backend directo",
+            "request": {
+              "description": {
+                "content": "Verifica BD conectada. Debe responder 200 { status: OK, base_datos: conectada, db_hora }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "bc2b721f-51fb-4cc5-a5c3-a93389e74bff",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Health reports OK and base_datos conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status', 'OK'); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('db_hora'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "3f791eb5-b606-484f-8db7-411246adc730",
+            "name": "Health Check Gateway",
+            "request": {
+              "description": {
+                "content": "Verifica Gateway operativo. Debe listar módulos configurados (8/9 con Catálogo configured=false si no está desplegado).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "fcd15419-a5cd-4325-bf7f-b83789464a2e",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Gateway health has expected structure', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "a32c810e-cf4d-47e8-85ce-bcf399bafc83",
+            "name": "Listar reseñas con filtros (público)",
+            "request": {
+              "description": {
+                "content": "Endpoint público para listar reseñas de un evento con filtros opcionales (id_usuario, id_evento, clasificacion).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0c72bc1e-f160-4c4b-9a33-7657949dcd85",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Returns array', function () { pm.expect(pm.response.json()).to.be.an('array'); });",
+                    "pm.test('Items have expected fields', function () { const arr = pm.response.json(); if (arr.length > 0) { arr.forEach(r => { pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento'); pm.expect(r).to.have.property('clasificacion').that.is.oneOf([1,2,3,4,5]); }); } });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "e5d5c9f3-0e1d-483b-9a1c-77bb7af63767",
+            "name": "Promedio simple de un evento (público)",
+            "request": {
+              "description": {
+                "content": "Devuelve solo { promedio: 4.6 } (1 decimal, null si no hay reseñas). Seed evt-101: 5 reseñas (5,4,5,5,4) = 4.6.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "promedio"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "id_evento",
+                    "value": "{{evento_id}}"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "d4b613b7-3303-4e26-af92-6a9fa7c8ad20",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Returns promedio field', function () { const r = pm.response.json(); pm.expect(r).to.have.property('promedio'); });",
+                    "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                    "pm.test('evt-101 has promedio 4.6 from seed (5 reseñas: 5,4,5,5,4 = 23/5)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.6); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "345a0342-d5c0-4522-be7a-2cb002d20b48",
+            "name": "Respuesta organizador - POST /api/resenas/:idResena/respuestas",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` de usuario 'organizador' QUE SEA el organizador del evento (id_organizador en BD coincide con UUID de Auth). Seed: evt-101 organizador id=1 (ana.lopez@tec.mx). En workstation: Auth no en red → 401 INVALID_REQUEST.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "1",
+                  "respuestas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"texto\": \"Gracias por tu reseña, valoramos tu opinión.\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "9d968217-3321-4423-a68e-a34f1cfb8fc2",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 201, 401, 403 or 404', function () { pm.expect([201, 401, 403, 404]).to.include(pm.response.code); });",
+                    "pm.test('If 201: returns response object', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('id_resena', 1); pm.expect(r).to.have.property('texto').that.is.a('string').and.is.not.empty; pm.expect(r).to.have.property('fecha_respuesta'); pm.expect(r).to.have.property('nombre_responsable'); } });",
+                    "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: not organizador or not owner', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "auth": {
+      "type": "noauth",
+      "noauth": []
+    },
+    "event": [],
+    "protocolProfileBehavior": {
+      "disableBodyPruning": true
+    },
+    "variable": [
+      {
+        "description": {
+          "content": "URL del API Gateway en workstation (accesible desde navegador/host)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:8080",
+        "key": "gateway_url"
+      },
+      {
+        "description": {
+          "content": "URL directa del backend Reseñas (puerto 5000 mapeado de 3000 interno)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:5000",
+        "key": "backend_url"
+      },
+      {
+        "description": {
+          "content": "ID de evento de prueba (existe en seed.sql)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "evt-101",
+        "key": "evento_id"
+      },
+      {
+        "description": {
+          "content": "UUID v4 generado automáticamente por request para trazabilidad",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "{{$guid}}",
+        "key": "correlation_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "reseñas-entrega4-integraciones",
+      "name": "Entrega 4 - Pruebas de Integración Reseñas (Workstation)",
+      "version": {
+        "raw": "2.0.0",
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "prerelease": [],
+        "build": [],
+        "string": "2.0.0"
+      },
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Colección Postman para validar las 3 integraciones del módulo Reseñas en workstation:\n- I1: Auth (validación de sesión via cookie jwt + x-api-key)\n- I2: Catálogo (consumo GET /info-servicio y provisión GET /evento/{eventoId})\n- I3: RabbitMQ (publicación evento resena.creada en exchange ticketu.events)\n\n**Pre-requisitos workstation:**\n- Auth, API Gateway, RabbitMQ, Catálogo, Check-in desplegados\n- Variables de entorno configuradas en .env (ver INSTALACION.md)\n- Cookie `jwt` obtenida tras login en frontend (http://localhost:3000)",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-11-23T00:00:00.000Z",
+      "postman_exported_using": "Postman/10.x"
+    },
+    "id": "53f71bbb-c836-411f-8e3b-06dd2d2c6d64",
+    "name": "Workstation - Entrega 4 Reseñas",
+    "values": [
+      {
+        "description": {
+          "content": "API Gateway workstation (accesible desde navegador/host)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:8080",
+        "key": "gateway_url"
+      },
+      {
+        "description": {
+          "content": "Backend Reseñas directo (puerto 5000 mapeado de 3000 interno Docker)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:5000",
+        "key": "backend_url"
+      },
+      {
+        "description": {
+          "content": "ID de evento de prueba (existe en seed.sql con 3 reseñas)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "evt-101",
+        "key": "evento_id"
+      },
+      {
+        "description": {
+          "content": "Se auto-genera por request ({{$guid}})",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "",
+        "key": "correlation_id"
+      }
+    ]
+  },
+  "globals": {
+    "id": "072e724f-074b-4fe7-8be5-2918cdab5631",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 10,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 0,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 41.666666666666664,
+      "responseMin": 11,
+      "responseMax": 86,
+      "responseSd": 32.10745846199741,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1795560328548,
+      "completed": 1795560328921
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 3,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "6d468dbd-8cf6-484b-943d-bdcd51e7e59b",
+          "httpRequestId": "a954250b-c449-4093-9fb3-40fa7b4178a4"
+        },
+        "item": {
+          "id": "d9cc8cdc-df0f-4915-9d23-1221a31a02eb",
+          "name": "1.1 GET /api/resenas/me - Con sesión válida (via Gateway)",
+          "request": {
+            "description": {
+              "content": "Requiere cookie `jwt` válida. En workstation: Auth service NO está en la red plataforma-eventos-net (responsabilidad Platform Team). Esperado: 401 INVALID_REQUEST",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "resenas",
+                "me"
+              ],
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e5232516-9e08-430d-8242-761c1596181e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 Unauthorized (Auth not in workstation network)', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                  "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                  "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                ],
+                "_lastExecutionId": "5b9b806e-805a-4ca0-b446-96b3a763eb9b"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Requiere cookie `jwt` válida. En workstation: Auth service NO está en la red plataforma-eventos-net (responsabilidad Platform Team). Esperado: 401 INVALID_REQUEST",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "8080",
+            "path": [
+              "api",
+              "resenas",
+              "me"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": ""
+            },
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "06167957-d71c-41ca-bfb8-6b448d665c35",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8080",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET",
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "2682402f-9576-4e97-b079-302e7d651202",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "x-request-id",
+              "value": "3a7d6694-924b-4f75-a470-be2330b5729b"
+            },
+            {
+              "key": "x-correlation-id",
+              "value": "7481138c-281b-49b4-89c8-9a3f67302308"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "203"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"cb-0Fjtt6YLvc3Se5icXiVxglVUb30\""
+            },
+            {
+              "key": "date",
+              "value": "Tue, 24 Nov 2026 22:45:28 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              105,
+              103,
+              111,
+              34,
+              58,
+              34,
+              73,
+              78,
+              86,
+              65,
+              76,
+              73,
+              68,
+              95,
+              82,
+              69,
+              81,
+              85,
+              69,
+              83,
+              84,
+              34,
+              44,
+              34,
+              109,
+              101,
+              110,
+              115,
+              97,
+              106,
+              101,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              55,
+              52,
+              56,
+              49,
+              49,
+              51,
+              56,
+              99,
+              45,
+              50,
+              56,
+              49,
+              98,
+              45,
+              52,
+              57,
+              98,
+              52,
+              45,
+              56,
+              57,
+              99,
+              56,
+              45,
+              57,
+              97,
+              51,
+              102,
+              54,
+              55,
+              51,
+              48,
+              50,
+              51,
+              48,
+              56,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 86,
+          "responseSize": 203
+        },
+        "id": "d9cc8cdc-df0f-4915-9d23-1221a31a02eb",
+        "assertions": [
+          {
+            "assertion": "Status 401 Unauthorized (Auth not in workstation network)",
+            "skipped": false
+          },
+          {
+            "assertion": "Error code is INVALID_REQUEST",
+            "skipped": false
+          },
+          {
+            "assertion": "Error message is descriptive",
+            "skipped": false
+          },
+          {
+            "assertion": "Has correlationId in error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "66368c39-a327-49a7-946c-7c4c56a6b4f3",
+          "length": 3,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "72c5693d-2ead-48fa-884e-e497b47e2916"
+        },
+        "item": {
+          "id": "ebfff805-726e-4483-9b82-050a23fa4a1d",
+          "name": "1.2 GET /api/resenas/me - Sin cookie (debe dar 401)",
+          "request": {
+            "description": {
+              "content": "Sin enviar cookie `jwt`. Debe responder 401 con código INVALID_REQUEST",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "resenas",
+                "me"
+              ],
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "54b78cfb-4c50-4dfa-8671-5e0c58acd078",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                  "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                  "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                ],
+                "_lastExecutionId": "15b25c5d-14bb-4371-b31f-53d8ed6022aa"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Sin enviar cookie `jwt`. Debe responder 401 con código INVALID_REQUEST",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "8080",
+            "path": [
+              "api",
+              "resenas",
+              "me"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": ""
+            },
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "6d843237-57d3-4f38-9de3-dd4ce0ac0bc2",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8080",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET",
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "e6cb5bf6-7a06-495e-bbfc-7addaf4da950",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "x-request-id",
+              "value": "b5e45b05-19d5-49c5-8744-aaadde39f5b6"
+            },
+            {
+              "key": "x-correlation-id",
+              "value": "13758d8c-5f4a-43ed-8047-66d2213245e2"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "203"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"cb-x+Sq4G/yiYwtsW8Jt0gLh8c3qTE\""
+            },
+            {
+              "key": "date",
+              "value": "Tue, 24 Nov 2026 22:45:28 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              105,
+              103,
+              111,
+              34,
+              58,
+              34,
+              73,
+              78,
+              86,
+              65,
+              76,
+              73,
+              68,
+              95,
+              82,
+              69,
+              81,
+              85,
+              69,
+              83,
+              84,
+              34,
+              44,
+              34,
+              109,
+              101,
+              110,
+              115,
+              97,
+              106,
+              101,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              49,
+              51,
+              55,
+              53,
+              56,
+              100,
+              56,
+              99,
+              45,
+              53,
+              102,
+              52,
+              97,
+              45,
+              52,
+              51,
+              101,
+              100,
+              45,
+              56,
+              48,
+              52,
+              55,
+              45,
+              54,
+              54,
+              100,
+              50,
+              50,
+              49,
+              51,
+              50,
+              52,
+              53,
+              101,
+              50,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 11,
+          "responseSize": 203
+        },
+        "id": "ebfff805-726e-4483-9b82-050a23fa4a1d",
+        "assertions": [
+          {
+            "assertion": "Status 401 Unauthorized",
+            "skipped": false
+          },
+          {
+            "assertion": "Error code is INVALID_REQUEST",
+            "skipped": false
+          },
+          {
+            "assertion": "Error message is descriptive",
+            "skipped": false
+          },
+          {
+            "assertion": "Has correlationId in error",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "5ae38a6a-56f3-484b-a1f9-88527ee274ff",
+          "length": 3,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "b7d49180-8bb4-4a66-a686-c6e63e512770"
+        },
+        "item": {
+          "id": "8cb7df37-656d-4ad4-a813-3bda23d275bd",
+          "name": "1.3 POST /api/resenas - Con rol organizador (debe dar 403)",
+          "request": {
+            "description": {
+              "content": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "resenas"
+              ],
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Prueba rol organizador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0ce312b3-65a5-40cd-8328-92f0744ec664",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                  "pm.test('Error code is INVALID_REQUEST or 403 message', function () { const r = pm.response.json(); if (pm.response.code === 401) { pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } else { pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });"
+                ],
+                "_lastExecutionId": "a46b8356-6e19-469a-ae5f-664d180c25fd"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "8080",
+            "path": [
+              "api",
+              "resenas"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": ""
+            },
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "cbf5714a-7c3b-4c91-97ee-fe1c161cd414",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8080",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "93",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id_evento\": \"evt-101\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Prueba rol organizador\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "a0366e28-4310-4d33-8ec9-caf2934b0d42",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "x-request-id",
+              "value": "df4d838e-9df8-4434-ab86-e97c1b6f9720"
+            },
+            {
+              "key": "x-correlation-id",
+              "value": "7776a3e2-5115-4d56-9643-7c6199e525ee"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "203"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"cb-BxhoYe0q8hIiL55LDMAHiYhc7bc\""
+            },
+            {
+              "key": "date",
+              "value": "Tue, 24 Nov 2026 22:45:28 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              105,
+              103,
+              111,
+              34,
+              58,
+              34,
+              73,
+              78,
+              86,
+              65,
+              76,
+              73,
+              68,
+              95,
+              82,
+              69,
+              81,
+              85,
+              69,
+              83,
+              84,
+              34,
+              44,
+              34,
+              109,
+              101,
+              110,
+              115,
+              97,
+              106,
+              101,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              55,
+              55,
+              55,
+              54,
+              97,
+              51,
+              101,
+              50,
+              45,
+              53,
+              49,
+              49,
+              53,
+              45,
+              52,
+              100,
+              53,
+              54,
+              45,
+              57,
+              54,
+              52,
+              51,
+              45,
+              55,
+              99,
+              54,
+              49,
+              57,
+              57,
+              101,
+              53,
+              50,
+              53,
+              101,
+              101,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 28,
+          "responseSize": 203
+        },
+        "id": "8cb7df37-656d-4ad4-a813-3bda23d275bd",
+        "assertions": [
+          {
+            "assertion": "Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)",
+            "skipped": false
+          },
+          {
+            "assertion": "Error code is INVALID_REQUEST or 403 message",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 609
+    },
+    "failures": [],
+    "error": null
+  }
+}
