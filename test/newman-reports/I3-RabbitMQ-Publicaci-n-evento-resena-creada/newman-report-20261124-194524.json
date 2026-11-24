@@ -1,0 +1,2881 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "reseñas-entrega4-integraciones"
+    },
+    "item": [
+      {
+        "id": "9b43ae01-7913-4644-b439-e6f06f3f7fca",
+        "name": "I1 - Auth: Validación de Sesión",
+        "description": {
+          "content": "Pruebas de la integración I1 (Auth). El navegador envía cookie `jwt` HttpOnly; el backend la reenvía a Auth con `x-api-key` para introspección.",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "43563268-20e3-43fc-95fb-233d120fb2ec",
+            "name": "1.1 GET /api/resenas/me - Con sesión válida (via Gateway)",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` válida. En workstation: Auth service NO está en la red plataforma-eventos-net (responsabilidad Platform Team). Esperado: 401 INVALID_REQUEST",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "me"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "7b07ac91-a7bb-443b-abbf-b5bab9124102",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 Unauthorized (Auth not in workstation network)', function () { pm.response.to.have.status(401); });",
+                    "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                    "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                    "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "e60fdd23-5231-4209-b664-1f258073fcf2",
+            "name": "1.2 GET /api/resenas/me - Sin cookie (debe dar 401)",
+            "request": {
+              "description": {
+                "content": "Sin enviar cookie `jwt`. Debe responder 401 con código INVALID_REQUEST",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "me"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "8658dec1-bda4-4aaf-b84b-c8984312fbd4",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 Unauthorized', function () { pm.response.to.have.status(401); });",
+                    "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                    "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                    "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "ffcdd41d-982e-4a27-bc70-5082117f822f",
+            "name": "1.3 POST /api/resenas - Con rol organizador (debe dar 403)",
+            "request": {
+              "description": {
+                "content": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Prueba rol organizador\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "5781e0ad-34a8-4b84-b8f7-f3d8edc01792",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                    "pm.test('Error code is INVALID_REQUEST or 403 message', function () { const r = pm.response.json(); if (pm.response.code === 401) { pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } else { pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "f183048b-58e1-43af-a7ca-5c0579771d90",
+        "name": "I2 - Catálogo: Consumo y Provisión",
+        "description": {
+          "content": "Pruebas de la integración I2 (Catálogo). Reseñas CONSUME Catálogo para validar evento (GET /info-servicio). Catálogo CONSUME Reseñas para mostrar promedio y listado (GET /evento/{eventoId}).",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "def39a6c-25f9-4dea-a09d-3d9fb43b26a4",
+            "name": "2.1 GET /api/resenas/eligibilidad - Con sesión usuario (via Gateway)",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` de rol 'usuario'. Valida: (1) rol usuario, (2) evento existe en Catálogo, (3) asistencia en Check-in, (4) sin reseña previa. Esperado: 200 { puedeResenar: true/false, motivo }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "eligibilidad"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4cf24c20-3a9f-4bf3-9290-308f991c17e6",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 or 401/403/503', function () { pm.expect([200, 401, 403, 503]).to.include(pm.response.code); });",
+                    "pm.test('If 200: has puedeResenar boolean', function () { if (pm.response.code === 200) { const r = pm.response.json(); pm.expect(r).to.have.property('puedeResenar').that.is.a('boolean'); pm.expect(r).to.have.property('motivo').that.is.oneOf([null, 'NO_ASISTIO', 'YA_RESENO']); } });",
+                    "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: rol no es usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });",
+                    "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "32a0e7ef-84b5-4bf9-870c-7dc468d58cf0",
+            "name": "2.2 GET /api/resenas/eligibilidad - Evento inexistente (debe dar 404/503)",
+            "request": {
+              "description": {
+                "content": "Evento que no existe en Catálogo. Backend llama a Catálogo y recibe 404 → Reseñas responde 503 o 404 según contrato",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "eligibilidad"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "eace6f7e-de4a-4b08-a48d-f67669f4a257",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 404 or 503 or 401', function () { pm.expect([404, 503, 401]).to.include(pm.response.code); });",
+                    "pm.test('Error message indicates evento no existe or similar', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.be.a('string').and.is.not.empty; });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "292cd3a8-2241-49b7-abd6-d64a32436b18",
+            "name": "2.3 GET /api/resenas/evento/{{evento_id}} - I-3 Principal (público, via Gateway)",
+            "request": {
+              "description": {
+                "content": "Endpoint principal I-3 consumido por Catálogo. NO requiere sesión. Devuelve: promedio (1 decimal), totalResenas, pagina, tamano, resenas[] ordenadas por fecha DESC. Seed tiene 5 reseñas en evt-101 (promedio 4.6).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0caa12a3-a471-44a5-8d3e-d0ffae43e79e",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });",
+                    "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                    "pm.test('totalResenas is integer >= 0', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.be.a('number').and.to.be.gte(0); });",
+                    "pm.test('resenas is array', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array'); });",
+                    "pm.test('resenas have required fields', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                    "pm.test('resenas ordered by fecha DESC', function () { const r = pm.response.json(); for (let i=1; i<r.resenas.length; i++) { pm.expect(new Date(r.resenas[i-1].fecha)).to.be.at.least(new Date(r.resenas[i].fecha)); } });",
+                    "pm.test('X-Correlation-Id present in response', function () { pm.expect(pm.response.headers.get('X-Correlation-Id')).to.be.a('string'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "ab458d78-e2a3-4878-baff-195b2954b991",
+            "name": "2.4 GET /api/resenas/evento/evt-103 - Evento sin reseñas (público)",
+            "request": {
+              "description": {
+                "content": "evt-103 existe en seed con 4 reseñas (promedio 4.25). Esperado: 200 { promedio: 4.25, totalResenas: 4, resenas: [...] }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "evt-103"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "fdee93f3-3d06-4faa-a14a-4ba00b2d6252",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('promedio is 4.3 (4.25 rounded to 1 decimal)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.3); });",
+                    "pm.test('totalResenas is 4', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.equal(4); });",
+                    "pm.test('resenas has 4 items', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(4); });",
+                    "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "be376352-4eee-4feb-af15-cbd61cfe0e38",
+            "name": "2.5 GET /api/resenas/evento/{{evento_id}}?tamano=500 - Parámetro inválido (400)",
+            "request": {
+              "description": {
+                "content": "tamano > 50 (máximo permitido). Debe responder 400 con mensaje comprensible",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "pagina",
+                    "value": "1"
+                  },
+                  {
+                    "key": "tamano",
+                    "value": "500"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4fe0b3c0-6870-4dd0-8e31-10d07fb6c6f4",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                    "pm.test('Error message mentions tamano', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.match(/tamano|tamaño|size|máx/i); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "7c01779a-8c55-4ffd-a35d-85121903bd06",
+            "name": "2.6 POST /api/v1/resenas/calificaciones-basicas - Lote para Catálogo (público)",
+            "request": {
+              "description": {
+                "content": "Endpoint V1 optimizado para Catálogo: consulta en lote promedio y total. Máx 100 eventos. No requiere sesión.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "resenas",
+                  "calificaciones-basicas"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"lista_id_eventos\": [\"evt-101\", \"evt-102\", \"evt-103\"]\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "1d1bb70e-0e5c-4684-8dc9-aed95c868b85",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has calificaciones object', function () { const r = pm.response.json(); pm.expect(r).to.have.property('calificaciones').that.is.an('object'); });",
+                    "pm.test('calificaciones has evt-101, evt-102, evt-103', function () { const r = pm.response.json(); pm.expect(r.calificaciones).to.have.keys('evt-101','evt-102','evt-103'); });",
+                    "pm.test('Each event has promedio and total_resenas', function () { const r = pm.response.json(); Object.values(r.calificaciones).forEach(v => { pm.expect(v).to.have.property('promedio'); pm.expect(v).to.have.property('total_resenas').that.is.a('number').and.gte(0); }); });",
+                    "pm.test('evt-101 has 5 reseñas in seed', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-101'].total_resenas).to.equal(5); pm.expect(r.calificaciones['evt-101'].promedio).to.equal(4.6); });",
+                    "pm.test('evt-103 has 4 reseñas', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-103'].total_resenas).to.equal(4); pm.expect(r.calificaciones['evt-103'].promedio).to.equal(4.3); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "93555f46-7329-48d3-a624-f0c9fec9af21",
+            "name": "2.7 GET /api/v1/resenas/evento/{{evento_id}} - Formato V1 para Catálogo (público)",
+            "request": {
+              "description": {
+                "content": "Versión alternativa con snake_case en respuesta (id_evento, total_resenas, resena_id, usuario_id, calificacion, fecha, comentario).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "68bee9cf-4bc5-492d-bcef-82055cda3aba",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Response uses snake_case fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('id_evento','promedio','total_resenas','pagina','tamano','resenas'); });",
+                    "pm.test('resenas items use snake_case', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resena_id','usuario_id','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                    "pm.test('Data matches main I-3 endpoint', function () { const r = pm.response.json(); pm.expect(r.id_evento).to.equal('evt-101'); pm.expect(r.total_resenas).to.equal(5); pm.expect(r.promedio).to.equal(4.6); });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "d63db106-d5d9-4cca-9319-39c226316dde",
+        "name": "I3 - RabbitMQ: Publicación evento resena.creada",
+        "description": {
+          "content": "Pruebas de la integración I3 (Broker). Tras crear una reseña (POST /api/resenas), el backend publica evento `resena.creada` en exchange `ticketu.events` (topic). Verificar en RabbitMQ Management UI: http://localhost:15672 (user: ticketu, pass: ticketu, vhost: ticketu).",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "7639b313-0bad-42aa-9be7-fdf44c941d97",
+            "name": "3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)",
+            "request": {
+              "description": {
+                "content": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "39b124c8-24b0-4d31-90c3-68a142be895b",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 201 Created or 401/403/409/503', function () { pm.expect([201, 401, 403, 409, 503]).to.include(pm.response.code); });",
+                    "pm.test('If 201: returns created reseña with all fields', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento', 'evt-101'); pm.expect(r).to.have.property('clasificacion', 5); pm.expect(r).to.have.property('fecha_reseña'); pm.collectionVariables.set('created_resena_id', r.num_resena); } });",
+                    "pm.test('If 401: INVALID_REQUEST (Auth not in network)', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: NO_ASISTIO or rol no usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });",
+                    "pm.test('If 409: YA_RESENO', function () { if (pm.response.code === 409) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('ya'); } });",
+                    "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ],
+                  "_lastExecutionId": "c9284941-55c5-47fe-b150-4a86d27957da"
+                }
+              }
+            ]
+          },
+          {
+            "id": "72324292-c01a-402c-a877-ed5a8f8cd0cb",
+            "name": "3.2 Verificar en BD - Última reseña insertada",
+            "request": {
+              "description": {
+                "content": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "evento",
+                  "{{evento_id}}"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "pagina",
+                    "value": "1"
+                  },
+                  {
+                    "key": "tamano",
+                    "value": "1"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "80aab55c-1f2a-4706-b776-77db1eac2016",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Has resenas array with 1 item', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(1); });",
+                    "pm.test('Resena has expected fields', function () { const r = pm.response.json(); const resena = r.resenas[0]; pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); pm.expect(r.eventoId).to.equal('evt-101'); });"
+                  ],
+                  "_lastExecutionId": "d4461c9d-1d09-4c5a-bfe6-4305074a7af9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "6f21a579-50fc-4ef7-8101-832979ced948",
+            "name": "3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)",
+            "request": {
+              "description": {
+                "content": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "db25c992-0748-4864-9664-4547bdc43959",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Health reports base_datos: conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('status', 'OK'); });"
+                  ],
+                  "_lastExecutionId": "b826f6f2-b9b0-4035-99b2-2960fd715225"
+                }
+              }
+            ]
+          },
+          {
+            "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+            "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+            "request": {
+              "description": {
+                "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+                "type": "text/plain"
+              },
+              "url": {
+                "protocol": "http",
+                "port": "15672",
+                "host": [
+                  "localhost"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                  ],
+                  "_lastExecutionId": "c60d3460-76dc-4423-9462-848b5f9d0a53"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "a143ad46-03bc-45f8-ae48-c5156e97b3ea",
+        "name": "Utilitarios y Health Checks",
+        "description": {
+          "content": "Endpoints de apoyo para diagnóstico y verificación de estado de servicios en workstation.",
+          "type": "text/plain"
+        },
+        "item": [
+          {
+            "id": "e5a5fafe-3915-4b32-9744-a8d5a08133a5",
+            "name": "Health Check Backend directo",
+            "request": {
+              "description": {
+                "content": "Verifica BD conectada. Debe responder 200 { status: OK, base_datos: conectada, db_hora }",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{backend_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "9341b3e1-ca06-4c2e-8de2-04bbffe658f5",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Health reports OK and base_datos conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status', 'OK'); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('db_hora'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "dc2c1842-aaaa-4a6a-952b-f3f7e3ad0dc4",
+            "name": "Health Check Gateway",
+            "request": {
+              "description": {
+                "content": "Verifica Gateway operativo. Debe listar módulos configurados (8/9 con Catálogo configured=false si no está desplegado).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "a1fdb4fc-8ae6-4964-ac68-57147bc24263",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Gateway health has expected structure', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status'); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "618c8eb1-ffa3-4b08-9a92-9104732f0970",
+            "name": "Listar reseñas con filtros (público)",
+            "request": {
+              "description": {
+                "content": "Endpoint público para listar reseñas de un evento con filtros opcionales (id_usuario, id_evento, clasificacion).",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "480a7c8f-76ce-4878-aab1-fca3c5afba71",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Returns array', function () { pm.expect(pm.response.json()).to.be.an('array'); });",
+                    "pm.test('Items have expected fields', function () { const arr = pm.response.json(); if (arr.length > 0) { arr.forEach(r => { pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento'); pm.expect(r).to.have.property('clasificacion').that.is.oneOf([1,2,3,4,5]); }); } });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "ce6b7ce4-1268-4603-b457-841f63aceb9c",
+            "name": "Promedio simple de un evento (público)",
+            "request": {
+              "description": {
+                "content": "Devuelve solo { promedio: 4.6 } (1 decimal, null si no hay reseñas). Seed evt-101: 5 reseñas (5,4,5,5,4) = 4.6.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "promedio"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [
+                  {
+                    "key": "id_evento",
+                    "value": "{{evento_id}}"
+                  }
+                ],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "d70ef617-049b-4070-882e-5738b0ebf3bb",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                    "pm.test('Returns promedio field', function () { const r = pm.response.json(); pm.expect(r).to.have.property('promedio'); });",
+                    "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                    "pm.test('evt-101 has promedio 4.6 from seed (5 reseñas: 5,4,5,5,4 = 23/5)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.6); });"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "be64365e-4ed5-405d-aadf-fee64bcf85fd",
+            "name": "Respuesta organizador - POST /api/resenas/:idResena/respuestas",
+            "request": {
+              "description": {
+                "content": "Requiere cookie `jwt` de usuario 'organizador' QUE SEA el organizador del evento (id_organizador en BD coincide con UUID de Auth). Seed: evt-101 organizador id=1 (ana.lopez@tec.mx). En workstation: Auth no en red → 401 INVALID_REQUEST.",
+                "type": "text/plain"
+              },
+              "url": {
+                "path": [
+                  "api",
+                  "resenas",
+                  "1",
+                  "respuestas"
+                ],
+                "host": [
+                  "{{gateway_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Correlation-Id",
+                  "value": "{{correlation_id}}"
+                },
+                {
+                  "key": "Accept",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"texto\": \"Gracias por tu reseña, valoramos tu opinión.\"\n}",
+                "options": {
+                  "raw": {
+                    "language": "json"
+                  }
+                }
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "06f0d0de-29d4-45fb-a4f1-0c59c5e27d1a",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status 201, 401, 403 or 404', function () { pm.expect([201, 401, 403, 404]).to.include(pm.response.code); });",
+                    "pm.test('If 201: returns response object', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('id_resena', 1); pm.expect(r).to.have.property('texto').that.is.a('string').and.is.not.empty; pm.expect(r).to.have.property('fecha_respuesta'); pm.expect(r).to.have.property('nombre_responsable'); } });",
+                    "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                    "pm.test('If 403: not organizador or not owner', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "auth": {
+      "type": "noauth",
+      "noauth": []
+    },
+    "event": [],
+    "protocolProfileBehavior": {
+      "disableBodyPruning": true
+    },
+    "variable": [
+      {
+        "description": {
+          "content": "URL del API Gateway en workstation (accesible desde navegador/host)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:8080",
+        "key": "gateway_url"
+      },
+      {
+        "description": {
+          "content": "URL directa del backend Reseñas (puerto 5000 mapeado de 3000 interno)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:5000",
+        "key": "backend_url"
+      },
+      {
+        "description": {
+          "content": "ID de evento de prueba (existe en seed.sql)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "evt-101",
+        "key": "evento_id"
+      },
+      {
+        "description": {
+          "content": "UUID v4 generado automáticamente por request para trazabilidad",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "{{$guid}}",
+        "key": "correlation_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "reseñas-entrega4-integraciones",
+      "name": "Entrega 4 - Pruebas de Integración Reseñas (Workstation)",
+      "version": {
+        "raw": "2.0.0",
+        "major": 2,
+        "minor": 0,
+        "patch": 0,
+        "prerelease": [],
+        "build": [],
+        "string": "2.0.0"
+      },
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Colección Postman para validar las 3 integraciones del módulo Reseñas en workstation:\n- I1: Auth (validación de sesión via cookie jwt + x-api-key)\n- I2: Catálogo (consumo GET /info-servicio y provisión GET /evento/{eventoId})\n- I3: RabbitMQ (publicación evento resena.creada en exchange ticketu.events)\n\n**Pre-requisitos workstation:**\n- Auth, API Gateway, RabbitMQ, Catálogo, Check-in desplegados\n- Variables de entorno configuradas en .env (ver INSTALACION.md)\n- Cookie `jwt` obtenida tras login en frontend (http://localhost:3000)",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-11-23T00:00:00.000Z",
+      "postman_exported_using": "Postman/10.x"
+    },
+    "id": "18fea531-e06e-400e-84af-743d714bb1da",
+    "name": "Workstation - Entrega 4 Reseñas",
+    "values": [
+      {
+        "description": {
+          "content": "API Gateway workstation (accesible desde navegador/host)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:8080",
+        "key": "gateway_url"
+      },
+      {
+        "description": {
+          "content": "Backend Reseñas directo (puerto 5000 mapeado de 3000 interno Docker)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "http://localhost:5000",
+        "key": "backend_url"
+      },
+      {
+        "description": {
+          "content": "ID de evento de prueba (existe en seed.sql con 3 reseñas)",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "evt-101",
+        "key": "evento_id"
+      },
+      {
+        "description": {
+          "content": "Se auto-genera por request ({{$guid}})",
+          "type": "text/plain"
+        },
+        "type": "any",
+        "value": "",
+        "key": "correlation_id"
+      }
+    ]
+  },
+  "globals": {
+    "id": "e79a0f6e-85f9-4502-a824-34b02508cb3e",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 1
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 12,
+        "pending": 0,
+        "failed": 1
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 0,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 28.333333333333332,
+      "responseMin": 10,
+      "responseMax": 64,
+      "responseSd": 25.223445883190152,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1795560336555,
+      "completed": 1795560337016
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "6019f235-427c-4c9b-ac24-7de22b34aefc",
+          "httpRequestId": "e355e870-0e85-4947-b3d1-5486bc9af3f5"
+        },
+        "item": {
+          "id": "7639b313-0bad-42aa-9be7-fdf44c941d97",
+          "name": "3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)",
+          "request": {
+            "description": {
+              "content": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "resenas"
+              ],
+              "host": [
+                "{{gateway_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "39b124c8-24b0-4d31-90c3-68a142be895b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created or 401/403/409/503', function () { pm.expect([201, 401, 403, 409, 503]).to.include(pm.response.code); });",
+                  "pm.test('If 201: returns created reseña with all fields', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento', 'evt-101'); pm.expect(r).to.have.property('clasificacion', 5); pm.expect(r).to.have.property('fecha_reseña'); pm.collectionVariables.set('created_resena_id', r.num_resena); } });",
+                  "pm.test('If 401: INVALID_REQUEST (Auth not in network)', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                  "pm.test('If 403: NO_ASISTIO or rol no usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });",
+                  "pm.test('If 409: YA_RESENO', function () { if (pm.response.code === 409) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('ya'); } });",
+                  "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                ],
+                "_lastExecutionId": "c9284941-55c5-47fe-b150-4a86d27957da"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "8080",
+            "path": [
+              "api",
+              "resenas"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": ""
+            },
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "e51ff96f-55b4-4187-8ce3-795d05351101",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8080",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "112",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id_evento\": \"evt-101\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+            "options": {
+              "raw": {
+                "language": "json"
+              }
+            }
+          },
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "9af87a2e-a20e-4ac0-9ce5-f45fe7a817c3",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "x-powered-by",
+              "value": "Express"
+            },
+            {
+              "key": "Vary",
+              "value": "Origin"
+            },
+            {
+              "key": "Access-Control-Allow-Credentials",
+              "value": "true"
+            },
+            {
+              "key": "x-request-id",
+              "value": "1c6ea18c-fbf7-4c1f-ae94-e9ae1320692b"
+            },
+            {
+              "key": "x-correlation-id",
+              "value": "3d30e23d-a770-4121-afa6-3da72a988b89"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "content-length",
+              "value": "203"
+            },
+            {
+              "key": "etag",
+              "value": "W/\"cb-vUgNhtI9KCpRc9ILHFz/H0HtZj0\""
+            },
+            {
+              "key": "date",
+              "value": "Tue, 24 Nov 2026 22:45:36 GMT"
+            },
+            {
+              "key": "connection",
+              "value": "close"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              114,
+              114,
+              111,
+              114,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              100,
+              105,
+              103,
+              111,
+              34,
+              58,
+              34,
+              73,
+              78,
+              86,
+              65,
+              76,
+              73,
+              68,
+              95,
+              82,
+              69,
+              81,
+              85,
+              69,
+              83,
+              84,
+              34,
+              44,
+              34,
+              109,
+              101,
+              110,
+              115,
+              97,
+              106,
+              101,
+              34,
+              58,
+              34,
+              68,
+              101,
+              98,
+              101,
+              115,
+              32,
+              105,
+              110,
+              105,
+              99,
+              105,
+              97,
+              114,
+              32,
+              115,
+              101,
+              115,
+              105,
+              195,
+              179,
+              110,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              114,
+              101,
+              97,
+              108,
+              105,
+              122,
+              97,
+              114,
+              32,
+              101,
+              115,
+              116,
+              97,
+              32,
+              97,
+              99,
+              99,
+              105,
+              195,
+              179,
+              110,
+              34,
+              44,
+              34,
+              99,
+              111,
+              114,
+              114,
+              101,
+              108,
+              97,
+              116,
+              105,
+              111,
+              110,
+              73,
+              100,
+              34,
+              58,
+              34,
+              51,
+              100,
+              51,
+              48,
+              101,
+              50,
+              51,
+              100,
+              45,
+              97,
+              55,
+              55,
+              48,
+              45,
+              52,
+              49,
+              50,
+              49,
+              45,
+              97,
+              102,
+              97,
+              54,
+              45,
+              51,
+              100,
+              97,
+              55,
+              50,
+              97,
+              57,
+              56,
+              56,
+              98,
+              56,
+              57,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 64,
+          "responseSize": 203
+        },
+        "id": "7639b313-0bad-42aa-9be7-fdf44c941d97",
+        "assertions": [
+          {
+            "assertion": "Status 201 Created or 401/403/409/503",
+            "skipped": false
+          },
+          {
+            "assertion": "If 201: returns created reseña with all fields",
+            "skipped": false
+          },
+          {
+            "assertion": "If 401: INVALID_REQUEST (Auth not in network)",
+            "skipped": false
+          },
+          {
+            "assertion": "If 403: NO_ASISTIO or rol no usuario",
+            "skipped": false
+          },
+          {
+            "assertion": "If 409: YA_RESENO",
+            "skipped": false
+          },
+          {
+            "assertion": "If 503: Catálogo/Check-in no disponible",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "e40e6264-4365-4807-a88a-ecddd3d07270",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "091eac5a-ff0c-43a0-a6c7-9c85ffb4f5ef"
+        },
+        "item": {
+          "id": "72324292-c01a-402c-a877-ed5a8f8cd0cb",
+          "name": "3.2 Verificar en BD - Última reseña insertada",
+          "request": {
+            "description": {
+              "content": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha).",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "resenas",
+                "evento",
+                "{{evento_id}}"
+              ],
+              "host": [
+                "{{backend_url}}"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "1"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "{{correlation_id}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "80aab55c-1f2a-4706-b776-77db1eac2016",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Has resenas array with 1 item', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(1); });",
+                  "pm.test('Resena has expected fields', function () { const r = pm.response.json(); const resena = r.resenas[0]; pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); pm.expect(r.eventoId).to.equal('evt-101'); });"
+                ],
+                "_lastExecutionId": "d4461c9d-1d09-4c5a-bfe6-4305074a7af9"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha).",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "api",
+              "resenas",
+              "evento",
+              "evt-101"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [
+              {
+                "key": "pagina",
+                "value": "1"
+              },
+              {
+                "key": "tamano",
+                "value": "1"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Correlation-Id",
+              "value": ""
+            },
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "5c748a27-0237-4560-9d0b-06e4a3450ac7",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET",
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "02eef8a6-fc20-4bdb-89dd-2e9574531be4",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "4b6b3fda-ac9b-4e26-8a93-3351056b8758"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "229"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"e5-FX7gEbPw7eqYFGXR6v/p584pY5c\""
+            },
+            {
+              "key": "Date",
+              "value": "Tue, 24 Nov 2026 22:45:36 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              101,
+              118,
+              101,
+              110,
+              116,
+              111,
+              73,
+              100,
+              34,
+              58,
+              34,
+              101,
+              118,
+              116,
+              45,
+              49,
+              48,
+              49,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              109,
+              101,
+              100,
+              105,
+              111,
+              34,
+              58,
+              52,
+              46,
+              54,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              82,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              53,
+              44,
+              34,
+              112,
+              97,
+              103,
+              105,
+              110,
+              97,
+              34,
+              58,
+              49,
+              44,
+              34,
+              116,
+              97,
+              109,
+              97,
+              110,
+              111,
+              34,
+              58,
+              49,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              58,
+              91,
+              123,
+              34,
+              114,
+              101,
+              115,
+              101,
+              110,
+              97,
+              73,
+              100,
+              34,
+              58,
+              34,
+              57,
+              34,
+              44,
+              34,
+              117,
+              115,
+              117,
+              97,
+              114,
+              105,
+              111,
+              73,
+              100,
+              34,
+              58,
+              34,
+              53,
+              34,
+              44,
+              34,
+              99,
+              97,
+              108,
+              105,
+              102,
+              105,
+              99,
+              97,
+              99,
+              105,
+              111,
+              110,
+              34,
+              58,
+              52,
+              44,
+              34,
+              102,
+              101,
+              99,
+              104,
+              97,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              57,
+              45,
+              48,
+              57,
+              84,
+              49,
+              52,
+              58,
+              48,
+              48,
+              58,
+              48,
+              48,
+              46,
+              48,
+              48,
+              48,
+              90,
+              34,
+              44,
+              34,
+              99,
+              111,
+              109,
+              101,
+              110,
+              116,
+              97,
+              114,
+              105,
+              111,
+              34,
+              58,
+              34,
+              73,
+              110,
+              115,
+              116,
+              114,
+              117,
+              99,
+              116,
+              111,
+              114,
+              101,
+              115,
+              32,
+              109,
+              117,
+              121,
+              32,
+              112,
+              114,
+              101,
+              112,
+              97,
+              114,
+              97,
+              100,
+              111,
+              115,
+              32,
+              121,
+              32,
+              112,
+              97,
+              99,
+              105,
+              101,
+              110,
+              116,
+              101,
+              115,
+              46,
+              34,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 11,
+          "responseSize": 229
+        },
+        "id": "72324292-c01a-402c-a877-ed5a8f8cd0cb",
+        "assertions": [
+          {
+            "assertion": "Status 200 OK",
+            "skipped": false
+          },
+          {
+            "assertion": "Has resenas array with 1 item",
+            "skipped": false
+          },
+          {
+            "assertion": "Resena has expected fields",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "4419fa24-8486-41cb-996c-e0dda2fb3b0f",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "d07ca061-e911-4974-b244-01f0f3bc42f4"
+        },
+        "item": {
+          "id": "6f21a579-50fc-4ef7-8101-832979ced948",
+          "name": "3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)",
+          "request": {
+            "description": {
+              "content": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada).",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{backend_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "db25c992-0748-4864-9664-4547bdc43959",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Health reports base_datos: conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('status', 'OK'); });"
+                ],
+                "_lastExecutionId": "b826f6f2-b9b0-4035-99b2-2960fd715225"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada).",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "5000",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Accept",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "ac137f0a-2a6d-49fd-8697-c4198027e94e",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:5000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET",
+          "auth": {
+            "type": "noauth",
+            "noauth": []
+          }
+        },
+        "response": {
+          "id": "c8aee5d3-ff44-443b-a8e8-6823b15375d5",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "X-Powered-By",
+              "value": "Express"
+            },
+            {
+              "key": "X-Correlation-Id",
+              "value": "9bb3384b-46be-402c-8030-e52c071a34de"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "key": "Content-Length",
+              "value": "96"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"60-7lAFlxfLtKKEswzZ3FKvVS4a3fU\""
+            },
+            {
+              "key": "Date",
+              "value": "Tue, 24 Nov 2026 22:45:36 GMT"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              79,
+              75,
+              34,
+              44,
+              34,
+              109,
+              111,
+              100,
+              117,
+              108,
+              111,
+              34,
+              58,
+              34,
+              82,
+              101,
+              115,
+              101,
+              110,
+              97,
+              115,
+              34,
+              44,
+              34,
+              98,
+              97,
+              115,
+              101,
+              95,
+              100,
+              97,
+              116,
+              111,
+              115,
+              34,
+              58,
+              34,
+              99,
+              111,
+              110,
+              101,
+              99,
+              116,
+              97,
+              100,
+              97,
+              34,
+              44,
+              34,
+              100,
+              98,
+              95,
+              104,
+              111,
+              114,
+              97,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              49,
+              49,
+              45,
+              50,
+              52,
+              84,
+              50,
+              50,
+              58,
+              52,
+              53,
+              58,
+              51,
+              54,
+              46,
+              56,
+              53,
+              49,
+              90,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 10,
+          "responseSize": 96
+        },
+        "id": "6f21a579-50fc-4ef7-8101-832979ced948",
+        "assertions": [
+          {
+            "assertion": "Status 200 OK",
+            "skipped": false
+          },
+          {
+            "assertion": "Health reports base_datos: conectada",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "441ba2f3-fe9c-42ec-994e-e8356a1a1df2",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "9d8e1081-07fc-4b44-9fba-a9b6a83a1a07"
+        },
+        "item": {
+          "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+          "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+          "request": {
+            "description": {
+              "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+              "type": "text/plain"
+            },
+            "url": {
+              "protocol": "http",
+              "port": "15672",
+              "host": [
+                "localhost"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                ],
+                "_lastExecutionId": "c60d3460-76dc-4423-9462-848b5f9d0a53"
+              }
+            }
+          ]
+        },
+        "request": {
+          "description": {
+            "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+            "type": "text/plain"
+          },
+          "url": {
+            "protocol": "http",
+            "port": "15672",
+            "path": [
+              ""
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "2eee38fe-215a-4ee7-8670-ce8ba6ae507f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:15672",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+        "requestError": {
+          "code": "ECONNRESET"
+        },
+        "assertions": [
+          {
+            "assertion": "RabbitMQ Management UI accessible (200 or redirect)",
+            "skipped": false,
+            "error": {
+              "name": "AssertionError",
+              "index": 0,
+              "test": "RabbitMQ Management UI accessible (200 or redirect)",
+              "message": "expected [ 200, 302, 401 ] to include undefined",
+              "stack": "AssertionError: expected [ 200, 302, 401 ] to include undefined\n   at Object.eval sandbox-script.js:1:4)"
+            }
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 528
+    },
+    "failures": [
+      {
+        "error": {
+          "code": "ECONNRESET",
+          "name": "Error",
+          "message": "socket hang up",
+          "stack": "Error: socket hang up\n    at Socket.socketOnEnd (node:_http_client:599:25)\n    at Socket.emit (node:events:520:35)\n    at endReadableNT (node:internal/streams/readable:1701:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)",
+          "checksum": "88b60386b15b8ac43b9367f4670fb106",
+          "id": "11908c3e-0952-47c4-b945-e17c99f1c142",
+          "timestamp": 1795560336948,
+          "stacktrace": [
+            {
+              "fileName": "node:_http_client",
+              "lineNumber": 599,
+              "functionName": "Socket.socketOnEnd",
+              "typeName": "Socket",
+              "methodName": "socketOnEnd",
+              "columnNumber": 25,
+              "native": false
+            },
+            {
+              "fileName": "node:events",
+              "lineNumber": 520,
+              "functionName": "Socket.emit",
+              "typeName": "Socket",
+              "methodName": "emit",
+              "columnNumber": 35,
+              "native": false
+            },
+            {
+              "fileName": "node:internal/streams/readable",
+              "lineNumber": 1701,
+              "functionName": "endReadableNT",
+              "typeName": "Object",
+              "methodName": null,
+              "columnNumber": 12,
+              "native": false
+            },
+            {
+              "fileName": "node:internal/process/task_queues",
+              "lineNumber": 89,
+              "functionName": "process.processTicksAndRejections",
+              "typeName": "process",
+              "methodName": "processTicksAndRejections",
+              "columnNumber": 21,
+              "native": false
+            }
+          ]
+        },
+        "at": "request",
+        "source": {
+          "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+          "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+          "request": {
+            "description": {
+              "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+              "type": "text/plain"
+            },
+            "url": {
+              "protocol": "http",
+              "port": "15672",
+              "path": [
+                ""
+              ],
+              "host": [
+                "localhost"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "User-Agent",
+                "value": "PostmanRuntime/7.39.1",
+                "system": true
+              },
+              {
+                "key": "Accept",
+                "value": "*/*",
+                "system": true
+              },
+              {
+                "key": "Cache-Control",
+                "value": "no-cache",
+                "system": true
+              },
+              {
+                "key": "Postman-Token",
+                "value": "2eee38fe-215a-4ee7-8670-ce8ba6ae507f",
+                "system": true
+              },
+              {
+                "key": "Host",
+                "value": "localhost:15672",
+                "system": true
+              },
+              {
+                "key": "Accept-Encoding",
+                "value": "gzip, deflate, br",
+                "system": true
+              },
+              {
+                "key": "Connection",
+                "value": "keep-alive",
+                "system": true
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        "cursor": {
+          "ref": "441ba2f3-fe9c-42ec-994e-e8356a1a1df2",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "9d8e1081-07fc-4b44-9fba-a9b6a83a1a07"
+        }
+      },
+      {
+        "error": {
+          "name": "AssertionError",
+          "index": 0,
+          "test": "RabbitMQ Management UI accessible (200 or redirect)",
+          "message": "expected [ 200, 302, 401 ] to include undefined",
+          "stack": "AssertionError: expected [ 200, 302, 401 ] to include undefined\n   at Object.eval sandbox-script.js:1:4)",
+          "checksum": "72e081fe1588f94fd2b5226713647ed6",
+          "id": "f4661fb8-3763-4877-938c-7e6212626108",
+          "timestamp": 1795560336979,
+          "stacktrace": [
+            {
+              "fileName": "sandbox-script.js",
+              "lineNumber": 1,
+              "functionName": "Object.eval",
+              "typeName": "Object",
+              "methodName": "eval",
+              "columnNumber": 4,
+              "native": false
+            }
+          ]
+        },
+        "at": "assertion:0 in test-script",
+        "source": {
+          "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+          "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+          "request": {
+            "description": {
+              "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+              "type": "text/plain"
+            },
+            "url": {
+              "protocol": "http",
+              "port": "15672",
+              "host": [
+                "localhost"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                ],
+                "_lastExecutionId": "c60d3460-76dc-4423-9462-848b5f9d0a53"
+              }
+            }
+          ]
+        },
+        "parent": {
+          "id": "d63db106-d5d9-4cca-9319-39c226316dde",
+          "name": "I3 - RabbitMQ: Publicación evento resena.creada",
+          "description": {
+            "content": "Pruebas de la integración I3 (Broker). Tras crear una reseña (POST /api/resenas), el backend publica evento `resena.creada` en exchange `ticketu.events` (topic). Verificar en RabbitMQ Management UI: http://localhost:15672 (user: ticketu, pass: ticketu, vhost: ticketu).",
+            "type": "text/plain"
+          },
+          "item": [
+            {
+              "id": "7639b313-0bad-42aa-9be7-fdf44c941d97",
+              "name": "3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)",
+              "request": {
+                "description": {
+                  "content": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "api",
+                    "resenas"
+                  ],
+                  "host": [
+                    "{{gateway_url}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{correlation_id}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id_evento\": \"{{evento_id}}\",\n  \"clasificacion\": 5,\n  \"descripcion\": \"Reseña de prueba para verificar RabbitMQ\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "39b124c8-24b0-4d31-90c3-68a142be895b",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 201 Created or 401/403/409/503', function () { pm.expect([201, 401, 403, 409, 503]).to.include(pm.response.code); });",
+                      "pm.test('If 201: returns created reseña with all fields', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento', 'evt-101'); pm.expect(r).to.have.property('clasificacion', 5); pm.expect(r).to.have.property('fecha_reseña'); pm.collectionVariables.set('created_resena_id', r.num_resena); } });",
+                      "pm.test('If 401: INVALID_REQUEST (Auth not in network)', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                      "pm.test('If 403: NO_ASISTIO or rol no usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });",
+                      "pm.test('If 409: YA_RESENO', function () { if (pm.response.code === 409) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('ya'); } });",
+                      "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                    ],
+                    "_lastExecutionId": "c9284941-55c5-47fe-b150-4a86d27957da"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "72324292-c01a-402c-a877-ed5a8f8cd0cb",
+              "name": "3.2 Verificar en BD - Última reseña insertada",
+              "request": {
+                "description": {
+                  "content": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha).",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "api",
+                    "resenas",
+                    "evento",
+                    "{{evento_id}}"
+                  ],
+                  "host": [
+                    "{{backend_url}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "pagina",
+                      "value": "1"
+                    },
+                    {
+                      "key": "tamano",
+                      "value": "1"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-Correlation-Id",
+                    "value": "{{correlation_id}}"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "80aab55c-1f2a-4706-b776-77db1eac2016",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Has resenas array with 1 item', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(1); });",
+                      "pm.test('Resena has expected fields', function () { const r = pm.response.json(); const resena = r.resenas[0]; pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); pm.expect(r.eventoId).to.equal('evt-101'); });"
+                    ],
+                    "_lastExecutionId": "d4461c9d-1d09-4c5a-bfe6-4305074a7af9"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "6f21a579-50fc-4ef7-8101-832979ced948",
+              "name": "3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)",
+              "request": {
+                "description": {
+                  "content": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada).",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": [
+                    "health"
+                  ],
+                  "host": [
+                    "{{backend_url}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "db25c992-0748-4864-9664-4547bdc43959",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                      "pm.test('Health reports base_datos: conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('status', 'OK'); });"
+                    ],
+                    "_lastExecutionId": "b826f6f2-b9b0-4035-99b2-2960fd715225"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "1b59b7db-c701-4f71-8e2f-69fa2dca40b5",
+              "name": "3.4 RabbitMQ Management UI - Pasos manuales",
+              "request": {
+                "description": {
+                  "content": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "protocol": "http",
+                  "port": "15672",
+                  "host": [
+                    "localhost"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "method": "GET"
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "id": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                    ],
+                    "_lastExecutionId": "c60d3460-76dc-4423-9462-848b5f9d0a53"
+                  }
+                }
+              ]
+            }
+          ],
+          "event": []
+        },
+        "cursor": {
+          "ref": "441ba2f3-fe9c-42ec-994e-e8356a1a1df2",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "9d8e1081-07fc-4b44-9fba-a9b6a83a1a07",
+          "scriptId": "4cad3703-c48f-4cde-93d7-df4cf8f4f516",
+          "execution": "c60d3460-76dc-4423-9462-848b5f9d0a53"
+        }
+      }
+    ],
+    "error": null
+  }
+}

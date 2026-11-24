@@ -8,18 +8,16 @@
 #   ./run-newman.sh --json-only        # Solo reporte JSON (para CI)
 #   ./run-newman.sh --bail             # Para en primer fallo
 #   ./run-newman.sh --folder "I1"      # Ejecutar solo una carpeta
+#   ./run-newman.sh --separate         # Ejecutar cada carpeta por separado con reportes en subdirectorios
 # ============================================================
 
 set -euo pipefail
 
 # Configuración
 COLLECTION_FILE="test/Entrega4-Integraciones.postman_collection.json"
-ENV_FILE="test/workstation.postman_environment.json"  # Opcional: archivo de environment .postman_environment.json
+ENV_FILE="test/workstation.postman_environment.json"
 REPORT_DIR="test/newman-reports"
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-REPORT_HTML="${REPORT_DIR}/newman-report-${TIMESTAMP}.html"
-REPORT_JSON="${REPORT_DIR}/newman-report-${TIMESTAMP}.json"
-REPORT_JUNIT="${REPORT_DIR}/newman-junit-${TIMESTAMP}.xml"
 
 # Colores para output
 RED='\033[0;31m'
@@ -46,57 +44,56 @@ if [[ ! -f "$COLLECTION_FILE" ]]; then
     exit 1
 fi
 
-# Crear directorio de reportes
+# Crear directorio base de reportes
 mkdir -p "$REPORT_DIR"
 
-# Parsear argumentos
-NEWMAN_ARGS=(
-    run "$COLLECTION_FILE"
-    --reporters cli,htmlextra,json,junit
-    --reporter-htmlextra-export "$REPORT_HTML"
-    --reporter-htmlextra-title "Entrega 4 - Pruebas Integración Reseñas"
-    --reporter-htmlextra-logs true
-    --reporter-htmlextra-testPaging true
-    --reporter-json-export "$REPORT_JSON"
-    --reporter-junit-export "$REPORT_JUNIT"
-    --color on
-    --bail false
-)
+# Función para determinar nombre de subdirectorio
+get_report_subdir() {
+    local fname="$1"
+    if [[ -n "$fname" ]]; then
+        echo "$fname" | sed 's/[^a-zA-Z0-9_-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//'
+    else
+        echo "all"
+    fi
+}
 
+# Parsear argumentos
 FOLDER=""
 BAIL=false
 JSON_ONLY=false
+SEPARATE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --folder)
             FOLDER="$2"
-            NEWMAN_ARGS+=(--folder "$FOLDER")
             shift 2
             ;;
         --bail)
             BAIL=true
-            NEWMAN_ARGS+=(--bail)
             shift
             ;;
         --json-only)
             JSON_ONLY=true
-            NEWMAN_ARGS=(run "$COLLECTION_FILE" --reporters json --reporter-json-export "$REPORT_JSON")
+            shift
+            ;;
+        --separate|--per-folder)
+            SEPARATE=true
             shift
             ;;
         --env)
             ENV_FILE="$2"
-            NEWMAN_ARGS+=(--environment "$ENV_FILE")
             shift 2
             ;;
         --help|-h)
             echo "Uso: $0 [opciones]"
             echo "Opciones:"
-            echo "  --folder <nombre>   Ejecutar solo una carpeta (ej: 'I1 - Auth')"
-            echo "  --bail              Detener en primer fallo"
-            echo "  --json-only         Solo generar reporte JSON (para CI)"
-            echo "  --env <archivo>     Archivo de environment Postman (.json)"
-            echo "  --help              Mostrar esta ayuda"
+            echo "  --folder <nombre>     Ejecutar solo una carpeta (ej: 'I1 - Auth')"
+            echo "  --separate            Ejecutar cada carpeta por separado con reportes en subdirectorios"
+            echo "  --bail                Detener en primer fallo"
+            echo "  --json-only           Solo generar reporte JSON (para CI)"
+            echo "  --env <archivo>       Archivo de environment Postman (.json)"
+            echo "  --help                Mostrar esta ayuda"
             exit 0
             ;;
         *)
@@ -111,15 +108,15 @@ log_info "=========================================="
 log_info "Entrega 4 - Newman Test Runner"
 log_info "=========================================="
 log_info "Colección: $COLLECTION_FILE"
-log_info "Directorio reportes: $REPORT_DIR"
+log_info "Directorio base reportes: $REPORT_DIR"
 [[ -n "$FOLDER" ]] && log_info "Carpeta filtrada: $FOLDER"
+[[ "$SEPARATE" == true ]] && log_info "Modo: --separate (subdirectorios por carpeta)"
 [[ "$BAIL" == true ]] && log_info "Modo: --bail (para en primer fallo)"
 [[ "$JSON_ONLY" == true ]] && log_info "Modo: --json-only"
 [[ -n "$ENV_FILE" ]] && log_info "Environment: $ENV_FILE"
 log_info "=========================================="
 
 # Variables de entorno por defecto para workstation
-# (Newman las usa como variables globales si no hay environment file)
 export gateway_url="${gateway_url:-http://localhost:8080}"
 export backend_url="${backend_url:-http://localhost:5000}"
 export evento_id="${evento_id:-evt-101}"
@@ -130,41 +127,106 @@ log_info "  backend_url = $backend_url"
 log_info "  evento_id   = $evento_id"
 log_info "=========================================="
 
-# Ejecutar newman
+# Función para ejecutar newman
+run_newman() {
+    local folder_name="$1"
+    local extra_args=("${@:2}")
+
+    # Subdirectorio para esta carpeta
+    local subdir=$(get_report_subdir "$folder_name")
+    local FOLDER_REPORT_DIR="${REPORT_DIR}/${subdir}"
+    mkdir -p "$FOLDER_REPORT_DIR"
+
+    local report_html="${FOLDER_REPORT_DIR}/newman-report-${TIMESTAMP}.html"
+    local report_json="${FOLDER_REPORT_DIR}/newman-report-${TIMESTAMP}.json"
+    local report_junit="${FOLDER_REPORT_DIR}/newman-junit-${TIMESTAMP}.xml"
+
+    local args=(
+        run "$COLLECTION_FILE"
+        --reporters cli,htmlextra,json,junit
+        --reporter-htmlextra-export "$report_html"
+        --reporter-htmlextra-title "Entrega 4 - Pruebas Integración Reseñas${folder_name:+ - $folder_name}"
+        --reporter-htmlextra-logs true
+        --reporter-htmlextra-testPaging true
+        --reporter-json-export "$report_json"
+        --reporter-junit-export "$report_junit"
+        --color on
+        --bail "$BAIL"
+    )
+
+    [[ -n "$folder_name" ]] && args+=(--folder "$folder_name")
+    [[ -n "$ENV_FILE" ]] && args+=(--environment "$ENV_FILE")
+    args+=("${extra_args[@]}")
+
+    if newman "${args[@]}"; then
+        echo ""
+        log_ok "=========================================="
+        [[ -n "$folder_name" ]] && log_ok "CARPETA: $folder_name"
+        log_ok "EJECUCIÓN COMPLETADA EXITOSAMENTE"
+        log_ok "=========================================="
+        [[ "$JSON_ONLY" != true ]] && log_ok "Reporte HTML: $report_html"
+        log_ok "Reporte JSON: $report_json"
+        [[ "$JSON_ONLY" != true ]] && log_ok "Reporte JUnit: $report_junit"
+
+        if command -v jq &> /dev/null && [[ -f "$report_json" ]]; then
+            echo ""
+            log_info "Resumen de resultados:"
+            jq -r '
+              .run.stats as $s |
+              "  Iteraciones: \($s.iterations.total) (fallidas: \($s.iterations.failed))",
+              "  Requests:    \($s.requests.total) (fallidas: \($s.requests.failed))",
+              "  Tests:       \($s.tests.total) (fallidos: \($s.tests.failed))",
+              "  Assertions:  \($s.assertions.total) (fallidas: \($s.assertions.failed))"
+            ' "$report_json"
+        fi
+        return 0
+    else
+        EXIT_CODE=$?
+        echo ""
+        log_err "=========================================="
+        [[ -n "$folder_name" ]] && log_err "CARPETA: $folder_name"
+        log_err "EJECUCIÓN FALLÓ (código: $EXIT_CODE)"
+        log_err "=========================================="
+        [[ "$JSON_ONLY" != true ]] && log_err "Reporte HTML: $report_html"
+        log_err "Reporte JSON: $report_json"
+        [[ "$JSON_ONLY" != true ]] && log_err "Reporte JUnit: $report_junit"
+        return $EXIT_CODE
+    fi
+}
+
+# Ejecutar
 log_info "Iniciando ejecución de pruebas..."
 echo ""
 
-if newman "${NEWMAN_ARGS[@]}"; then
-    echo ""
-    log_ok "=========================================="
-    log_ok "EJECUCIÓN COMPLETADA EXITOSAMENTE"
-    log_ok "=========================================="
-    [[ "$JSON_ONLY" != true ]] && log_ok "Reporte HTML: $REPORT_HTML"
-    log_ok "Reporte JSON: $REPORT_JSON"
-    [[ "$JSON_ONLY" != true ]] && log_ok "Reporte JUnit: $REPORT_JUNIT"
-
-    # Resumen rápido del JSON
-    if command -v jq &> /dev/null && [[ -f "$REPORT_JSON" ]]; then
-        echo ""
-        log_info "Resumen de resultados:"
-        jq -r '
-          .run.stats as $s |
-          "  Iteraciones: \($s.iterations.total) (fallidas: \($s.iterations.failed))",
-          "  Requests:    \($s.requests.total) (fallidas: \($s.requests.failed))",
-          "  Tests:       \($s.tests.total) (fallidos: \($s.tests.failed))",
-          "  Assertions:  \($s.assertions.total) (fallidas: \($s.assertions.failed))"
-        ' "$REPORT_JSON"
+if [[ "$SEPARATE" == true ]]; then
+    # Modo separado: obtener carpetas y ejecutar cada una en su subdirectorio
+    FOLDERS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$COLLECTION_FILE', 'utf8')).item.map(i => i.name).join('\n'))" 2>/dev/null || echo "")
+    if [[ -z "$FOLDERS" ]]; then
+        log_err "No se pudieron obtener las carpetas de la colección"
+        exit 1
     fi
 
-    exit 0
+    OVERALL_EXIT=0
+    while IFS= read -r folder; do
+        [[ -z "$folder" ]] && continue
+        log_info "=== Ejecutando carpeta: $folder ==="
+        run_newman "$folder" || OVERALL_EXIT=$?
+        echo ""
+    done <<< "$FOLDERS"
+
+    if [[ $OVERALL_EXIT -eq 0 ]]; then
+        log_ok "=========================================="
+        log_ok "TODAS LAS CARPETAS COMPLETADAS EXITOSAMENTE"
+        log_ok "=========================================="
+        exit 0
+    else
+        log_err "=========================================="
+        log_err "ALGUNAS CARPETAS FALLARON"
+        log_err "=========================================="
+        exit $OVERALL_EXIT
+    fi
 else
-    EXIT_CODE=$?
-    echo ""
-    log_err "=========================================="
-    log_err "EJECUCIÓN FALLÓ (código: $EXIT_CODE)"
-    log_err "=========================================="
-    [[ "$JSON_ONLY" != true ]] && log_err "Reporte HTML: $REPORT_HTML"
-    log_err "Reporte JSON: $REPORT_JSON"
-    [[ "$JSON_ONLY" != true ]] && log_err "Reporte JUnit: $REPORT_JUNIT"
-    exit $EXIT_CODE
+    # Modo normal (ejecución única en test/newman-reports/all/)
+    run_newman "$FOLDER"
+    exit $?
 fi

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Entrega 4 - Pruebas de Integración Reseñas (Workstation)" tests="4" time="0.085">
+  <testsuite name="I3 - RabbitMQ: Publicación evento resena.creada / 3.1 POST /api/resenas - Crear reseña (via Gateway, con sesión usuario)" id="7639b313-0bad-42aa-9be7-fdf44c941d97" timestamp="2026-11-24T22:45:36.555Z" tests="6" failures="0" errors="0" time="0.064">
+    <testcase name="Status 201 Created or 401/403/409/503" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+    <testcase name="If 201: returns created reseña with all fields" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+    <testcase name="If 401: INVALID_REQUEST (Auth not in network)" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+    <testcase name="If 403: NO_ASISTIO or rol no usuario" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+    <testcase name="If 409: YA_RESENO" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+    <testcase name="If 503: Catálogo/Check-in no disponible" time="0.064" classname="I3RabbitMqPublicacionEventoResenaCreada31PostApiResenasCrearResenaViaGatewayConSesionUsuario"/>
+  </testsuite>
+  <testsuite name="I3 - RabbitMQ: Publicación evento resena.creada / 3.2 Verificar en BD - Última reseña insertada" id="72324292-c01a-402c-a877-ed5a8f8cd0cb" timestamp="2026-11-24T22:45:36.555Z" tests="3" failures="0" errors="0" time="0.011">
+    <testcase name="Status 200 OK" time="0.011" classname="I3RabbitMqPublicacionEventoResenaCreada32VerificarEnBdUltimaResenaInsertada"/>
+    <testcase name="Has resenas array with 1 item" time="0.011" classname="I3RabbitMqPublicacionEventoResenaCreada32VerificarEnBdUltimaResenaInsertada"/>
+    <testcase name="Resena has expected fields" time="0.011" classname="I3RabbitMqPublicacionEventoResenaCreada32VerificarEnBdUltimaResenaInsertada"/>
+  </testsuite>
+  <testsuite name="I3 - RabbitMQ: Publicación evento resena.creada / 3.3 SQL: Verificar en PostgreSQL (ejecutar en psql)" id="6f21a579-50fc-4ef7-8101-832979ced948" timestamp="2026-11-24T22:45:36.555Z" tests="2" failures="0" errors="0" time="0.010">
+    <testcase name="Status 200 OK" time="0.010" classname="I3RabbitMqPublicacionEventoResenaCreada33SqlVerificarEnPostgreSqlEjecutarEnPsql"/>
+    <testcase name="Health reports base_datos: conectada" time="0.010" classname="I3RabbitMqPublicacionEventoResenaCreada33SqlVerificarEnPostgreSqlEjecutarEnPsql"/>
+  </testsuite>
+  <testsuite name="I3 - RabbitMQ: Publicación evento resena.creada / 3.4 RabbitMQ Management UI - Pasos manuales" id="1b59b7db-c701-4f71-8e2f-69fa2dca40b5" timestamp="2026-11-24T22:45:36.555Z" tests="1" failures="1" errors="1" time="0.000">
+    <system-err><![CDATA[Iteration: 0
+RequestError: Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:599:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+
+---
+]]></system-err>
+    <testcase name="RabbitMQ Management UI accessible (200 or redirect)" time="0.000" classname="I3RabbitMqPublicacionEventoResenaCreada34RabbitMqManagementUiPasosManuales">
+      <failure type="AssertionFailure" message="expected [ 200, 302, 401 ] to include undefined">
+        <![CDATA[Failed 1 times.]]>
+        <![CDATA[Collection JSON ID: reseñas-entrega4-integraciones.]]>
+        <![CDATA[Collection name: Entrega 4 - Pruebas de Integración Reseñas (Workstation).]]>
+        <![CDATA[Request name: I3 - RabbitMQ: Publicación evento resena.creada / 3.4 RabbitMQ Management UI - Pasos manuales.]]>
+        <![CDATA[Test description: RabbitMQ Management UI accessible (200 or redirect).]]>
+        <![CDATA[Error message: expected [ 200, 302, 401 ] to include undefined.]]>
+        <![CDATA[Stacktrace: AssertionError: expected [ 200, 302, 401 ] to include undefined
+   at Object.eval sandbox-script.js:1:4).]]>
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>

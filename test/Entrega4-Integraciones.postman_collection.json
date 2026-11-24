@@ -51,8 +51,22 @@
                 "value": "application/json"
               }
             ],
-            "description": "Requiere cookie `jwt` válida. En Postman: usa Interceptor o copia la cookie del navegador tras login en http://localhost:3000"
+            "description": "Requiere cookie `jwt` válida. En workstation: Auth service NO está en la red plataforma-eventos-net (responsabilidad Platform Team). Esperado: 401 INVALID_REQUEST"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized (Auth not in workstation network)', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                  "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                  "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -70,8 +84,22 @@
                 "value": "application/json"
               }
             ],
-            "description": "Sin enviar cookie `jwt`. Debe responder 401 con código SESION_INVALIDA"
+            "description": "Sin enviar cookie `jwt`. Debe responder 401 con código INVALID_REQUEST"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', function () { pm.response.to.have.status(401); });",
+                  "pm.test('Error code is INVALID_REQUEST', function () { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); });",
+                  "pm.test('Error message is descriptive', function () { const r = pm.response.json(); pm.expect(r).to.have.property('mensaje').that.is.a('string').and.is.not.empty; });",
+                  "pm.test('Has correlationId in error', function () { const r = pm.response.json(); pm.expect(r).to.have.property('correlationId').that.is.a('string'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -104,6 +132,18 @@
             },
             "description": "Usar cookie `jwt` de un usuario con rol 'organizador'. Debe responder 403: 'Solo una cuenta de usuario puede crear reseñas'"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                  "pm.test('Error code is INVALID_REQUEST or 403 message', function () { const r = pm.response.json(); if (pm.response.code === 401) { pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } else { pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -135,6 +175,21 @@
             ],
             "description": "Requiere cookie `jwt` de rol 'usuario'. Valida: (1) rol usuario, (2) evento existe en Catálogo, (3) asistencia en Check-in, (4) sin reseña previa. Esperado: 200 { puedeResenar: true/false, motivo }"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 401/403/503', function () { pm.expect([200, 401, 403, 503]).to.include(pm.response.code); });",
+                  "pm.test('If 200: has puedeResenar boolean', function () { if (pm.response.code === 200) { const r = pm.response.json(); pm.expect(r).to.have.property('puedeResenar').that.is.a('boolean'); pm.expect(r).to.have.property('motivo').that.is.oneOf([null, 'NO_ASISTIO', 'YA_RESENO']); } });",
+                  "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                  "pm.test('If 403: rol no es usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('usuario'); } });",
+                  "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -160,6 +215,18 @@
             ],
             "description": "Evento que no existe en Catálogo. Backend llama a Catálogo y recibe 404 → Reseñas responde 503 o 404 según contrato"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 or 503 or 401', function () { pm.expect([404, 503, 401]).to.include(pm.response.code); });",
+                  "pm.test('Error message indicates evento no existe or similar', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.be.a('string').and.is.not.empty; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -187,8 +254,26 @@
                 "value": "20"
               }
             ],
-            "description": "Endpoint principal I-3 consumido por Catálogo. NO requiere sesión. Devuelve: promedio (1 decimal), totalResenas, pagina, tamano, resenas[] ordenadas por fecha DESC. Seed tiene 3 reseñas en evt-101."
+            "description": "Endpoint principal I-3 consumido por Catálogo. NO requiere sesión. Devuelve: promedio (1 decimal), totalResenas, pagina, tamano, resenas[] ordenadas por fecha DESC. Seed tiene 5 reseñas en evt-101 (promedio 4.6)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });",
+                  "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                  "pm.test('totalResenas is integer >= 0', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.be.a('number').and.to.be.gte(0); });",
+                  "pm.test('resenas is array', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array'); });",
+                  "pm.test('resenas have required fields', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                  "pm.test('resenas ordered by fecha DESC', function () { const r = pm.response.json(); for (let i=1; i<r.resenas.length; i++) { pm.expect(new Date(r.resenas[i-1].fecha)).to.be.at.least(new Date(r.resenas[i].fecha)); } });",
+                  "pm.test('X-Correlation-Id present in response', function () { pm.expect(pm.response.headers.get('X-Correlation-Id')).to.be.a('string'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -216,15 +301,30 @@
                 "value": "20"
               }
             ],
-            "description": "evt-103 existe en seed pero SIN reseñas. Esperado: 200 { promedio: null, totalResenas: 0, resenas: [] }"
+            "description": "evt-103 existe en seed con 4 reseñas (promedio 4.25). Esperado: 200 { promedio: 4.25, totalResenas: 4, resenas: [...] }"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('promedio is 4.3 (4.25 rounded to 1 decimal)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.3); });",
+                  "pm.test('totalResenas is 4', function () { const r = pm.response.json(); pm.expect(r.totalResenas).to.equal(4); });",
+                  "pm.test('resenas has 4 items', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(4); });",
+                  "pm.test('Has all required fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('eventoId','promedio','totalResenas','pagina','tamano','resenas'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "2.5 GET /api/resenas/evento/{{evento_id}}?tamano=500 - Parámetro inválido (400)",
           "request": {
             "method": "GET",
-            "url": "{{gateway_url}}/api/resenas/evento/{{evento_id}}",
+            "url": "{{backend_url}}/api/resenas/evento/{{evento_id}}?pagina=1&tamano=500",
             "header": [
               {
                 "key": "X-Correlation-Id",
@@ -235,25 +335,27 @@
                 "value": "application/json"
               }
             ],
-            "queryParams": [
-              {
-                "key": "pagina",
-                "value": "1"
-              },
-              {
-                "key": "tamano",
-                "value": "500"
-              }
-            ],
             "description": "tamano > 50 (máximo permitido). Debe responder 400 con mensaje comprensible"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Error message mentions tamano', function () { const r = pm.response.json(); pm.expect(r.mensaje || r.message || r.error || '').to.match(/tamano|tamaño|size|máx/i); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "2.6 POST /api/v1/resenas/calificaciones-basicas - Lote para Catálogo (público)",
           "request": {
             "method": "POST",
-            "url": "{{gateway_url}}/api/v1/resenas/calificaciones-basicas",
+            "url": "{{backend_url}}/api/v1/resenas/calificaciones-basicas",
             "header": [
               {
                 "key": "Content-Type",
@@ -279,13 +381,29 @@
             },
             "description": "Endpoint V1 optimizado para Catálogo: consulta en lote promedio y total. Máx 100 eventos. No requiere sesión."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Has calificaciones object', function () { const r = pm.response.json(); pm.expect(r).to.have.property('calificaciones').that.is.an('object'); });",
+                  "pm.test('calificaciones has evt-101, evt-102, evt-103', function () { const r = pm.response.json(); pm.expect(r.calificaciones).to.have.keys('evt-101','evt-102','evt-103'); });",
+                  "pm.test('Each event has promedio and total_resenas', function () { const r = pm.response.json(); Object.values(r.calificaciones).forEach(v => { pm.expect(v).to.have.property('promedio'); pm.expect(v).to.have.property('total_resenas').that.is.a('number').and.gte(0); }); });",
+                  "pm.test('evt-101 has 5 reseñas in seed', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-101'].total_resenas).to.equal(5); pm.expect(r.calificaciones['evt-101'].promedio).to.equal(4.6); });",
+                  "pm.test('evt-103 has 4 reseñas', function () { const r = pm.response.json(); pm.expect(r.calificaciones['evt-103'].total_resenas).to.equal(4); pm.expect(r.calificaciones['evt-103'].promedio).to.equal(4.3); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "2.7 GET /api/v1/resenas/evento/{{evento_id}} - Formato V1 para Catálogo (público)",
           "request": {
             "method": "GET",
-            "url": "{{gateway_url}}/api/v1/resenas/evento/{{evento_id}}",
+            "url": "{{backend_url}}/api/v1/resenas/evento/{{evento_id}}",
             "header": [
               {
                 "key": "X-Correlation-Id",
@@ -308,6 +426,20 @@
             ],
             "description": "Versión alternativa con snake_case en respuesta (id_evento, total_resenas, resena_id, usuario_id, calificacion, fecha, comentario)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response uses snake_case fields', function () { const r = pm.response.json(); pm.expect(r).to.have.all.keys('id_evento','promedio','total_resenas','pagina','tamano','resenas'); });",
+                  "pm.test('resenas items use snake_case', function () { const r = pm.response.json(); r.resenas.forEach(resena => { pm.expect(resena).to.have.all.keys('resena_id','usuario_id','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); }); });",
+                  "pm.test('Data matches main I-3 endpoint', function () { const r = pm.response.json(); pm.expect(r.id_evento).to.equal('evt-101'); pm.expect(r.total_resenas).to.equal(5); pm.expect(r.promedio).to.equal(4.6); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -346,6 +478,22 @@
             },
             "description": "Requiere: (1) cookie `jwt` de usuario 'usuario', (2) Check-in confirme asistencia para ese usuario+evento, (3) Catálogo valide evento. Si todo OK → 201 + reseña creada + evento publicado en RabbitMQ. Revisar logs: `docker compose logs ms-resenas | grep resena.creada`"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created or 401/403/409/503', function () { pm.expect([201, 401, 403, 409, 503]).to.include(pm.response.code); });",
+                  "pm.test('If 201: returns created reseña with all fields', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento', 'evt-101'); pm.expect(r).to.have.property('clasificacion', 5); pm.expect(r).to.have.property('fecha_reseña'); pm.collectionVariables.set('created_resena_id', r.num_resena); } });",
+                  "pm.test('If 401: INVALID_REQUEST (Auth not in network)', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                  "pm.test('If 403: NO_ASISTIO or rol no usuario', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });",
+                  "pm.test('If 409: YA_RESENO', function () { if (pm.response.code === 409) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.include('ya'); } });",
+                  "pm.test('If 503: Catálogo/Check-in no disponible', function () { if (pm.response.code === 503) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -365,6 +513,19 @@
             ],
             "description": "Consulta directa al backend (puerto 5000) para ver la reseña recién creada. Debe coincidir con lo publicado en RabbitMQ (resenaId, eventoId, usuarioId, calificacion, fecha)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Has resenas array with 1 item', function () { const r = pm.response.json(); pm.expect(r.resenas).to.be.an('array').with.length(1); });",
+                  "pm.test('Resena has expected fields', function () { const r = pm.response.json(); const resena = r.resenas[0]; pm.expect(resena).to.have.all.keys('resenaId','usuarioId','calificacion','fecha','comentario'); pm.expect(resena.calificacion).to.be.oneOf([1,2,3,4,5]); pm.expect(r.eventoId).to.equal('evt-101'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -380,6 +541,18 @@
             ],
             "description": "Health check backend. Para verificar en BD directamente, ejecutar en contenedor:\n\n```bash\ndocker compose exec postgres-resenas psql -U postgres -d resenas -c \"SELECT num_resena, id_usuario, id_evento, clasificacion, fecha_reseña FROM resenas ORDER BY num_resena DESC LIMIT 1;\"\n```\n\nLos datos deben coincidir con el mensaje publicado en RabbitMQ (exchange ticketu.events, routing key resena.creada)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Health reports base_datos: conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('status', 'OK'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -390,6 +563,17 @@
             "header": [],
             "description": "Abrir en navegador: http://localhost:15672\n- User: `ticketu`\n- Pass: `ticketu`\n- Vhost: `ticketu`\n\n**Verificar:**\n1. Exchanges → `ticketu.events` (type: topic) → Messages published > 0\n2. Queues → crear cola temporal `test.resena.creada` → Bind to exchange `ticketu.events` with routing key `resena.creada`\n3. Get messages → ver payload JSON con campos: resenaId, eventoId, usuarioId, calificacion, fecha\n\n**Esquema esperado:**\n```json\n{\n  \"resenaId\": \"21\",\n  \"eventoId\": \"evt-101\",\n  \"usuarioId\": \"3f1e2c1a-4b8d-4a2e-9c3f-7d1e2f9b2d4a\",\n  \"calificacion\": 5,\n  \"fecha\": \"2026-11-23T10:30:00.000Z\"\n}\n```"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('RabbitMQ Management UI accessible (200 or redirect)', function () { pm.expect([200, 302, 401]).to.include(pm.response.code); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         }
       ]
@@ -402,7 +586,7 @@
           "name": "Health Check Backend directo",
           "request": {
             "method": "GET",
-            "url": "{{backend_url}}/api/resenas/health",
+            "url": "{{backend_url}}/health",
             "header": [
               {
                 "key": "Accept",
@@ -411,6 +595,18 @@
             ],
             "description": "Verifica BD conectada. Debe responder 200 { status: OK, base_datos: conectada, db_hora }"
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Health reports OK and base_datos conectada', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status', 'OK'); pm.expect(r).to.have.property('base_datos', 'conectada'); pm.expect(r).to.have.property('db_hora'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -426,6 +622,18 @@
             ],
             "description": "Verifica Gateway operativo. Debe listar módulos configurados (8/9 con Catálogo configured=false si no está desplegado)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Gateway health has expected structure', function () { const r = pm.response.json(); pm.expect(r).to.have.property('status'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -447,27 +655,48 @@
             ],
             "description": "Endpoint público para listar reseñas de un evento con filtros opcionales (id_usuario, id_evento, clasificacion)."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Returns array', function () { pm.expect(pm.response.json()).to.be.an('array'); });",
+                  "pm.test('Items have expected fields', function () { const arr = pm.response.json(); if (arr.length > 0) { arr.forEach(r => { pm.expect(r).to.have.property('num_resena'); pm.expect(r).to.have.property('id_usuario'); pm.expect(r).to.have.property('id_evento'); pm.expect(r).to.have.property('clasificacion').that.is.oneOf([1,2,3,4,5]); }); } });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
           "name": "Promedio simple de un evento (público)",
           "request": {
             "method": "GET",
-            "url": "{{gateway_url}}/api/resenas/promedio",
+            "url": "{{gateway_url}}/api/resenas/promedio?id_evento={{evento_id}}",
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "queryParams": [
-              {
-                "key": "id_evento",
-                "value": "{{evento_id}}"
-              }
-            ],
-            "description": "Devuelve solo { promedio: 4.3 } (1 decimal, null si no hay reseñas)."
+            "description": "Devuelve solo { promedio: 4.6 } (1 decimal, null si no hay reseñas). Seed evt-101: 5 reseñas (5,4,5,5,4) = 4.6."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Returns promedio field', function () { const r = pm.response.json(); pm.expect(r).to.have.property('promedio'); });",
+                  "pm.test('promedio is number with 1 decimal or null', function () { const r = pm.response.json(); if (r.promedio !== null) { pm.expect(r.promedio).to.be.a('number'); pm.expect(Number(r.promedio.toFixed(1))).to.equal(r.promedio); } });",
+                  "pm.test('evt-101 has promedio 4.6 from seed (5 reseñas: 5,4,5,5,4 = 23/5)', function () { const r = pm.response.json(); pm.expect(r.promedio).to.equal(4.6); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         },
         {
@@ -498,8 +727,22 @@
                 }
               }
             },
-            "description": "Requiere cookie `jwt` de usuario 'organizador' QUE SEA el organizador del evento (id_organizador en BD coincide con UUID de Auth). Seed: evt-101 organizador id=1 (ana.lopez@tec.mx). Si no hay mapeo UUID-organizador → 403."
+            "description": "Requiere cookie `jwt` de usuario 'organizador' QUE SEA el organizador del evento (id_organizador en BD coincide con UUID de Auth). Seed: evt-101 organizador id=1 (ana.lopez@tec.mx). En workstation: Auth no en red → 401 INVALID_REQUEST."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201, 401, 403 or 404', function () { pm.expect([201, 401, 403, 404]).to.include(pm.response.code); });",
+                  "pm.test('If 201: returns response object', function () { if (pm.response.code === 201) { const r = pm.response.json(); pm.expect(r).to.have.property('id_resena', 1); pm.expect(r).to.have.property('texto').that.is.a('string').and.is.not.empty; pm.expect(r).to.have.property('fecha_respuesta'); pm.expect(r).to.have.property('nombre_responsable'); } });",
+                  "pm.test('If 401: INVALID_REQUEST', function () { if (pm.response.code === 401) { const r = pm.response.json(); pm.expect(r).to.have.property('codigo', 'INVALID_REQUEST'); } });",
+                  "pm.test('If 403: not organizador or not owner', function () { if (pm.response.code === 403) { const r = pm.response.json(); pm.expect(r.mensaje || r.message || '').to.be.a('string').and.is.not.empty; } });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "response": []
         }
       ]

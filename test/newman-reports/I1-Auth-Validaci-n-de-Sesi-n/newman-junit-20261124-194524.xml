@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Entrega 4 - Pruebas de Integración Reseñas (Workstation)" tests="3" time="0.125">
+  <testsuite name="I1 - Auth: Validación de Sesión / 1.1 GET /api/resenas/me - Con sesión válida (via Gateway)" id="d9cc8cdc-df0f-4915-9d23-1221a31a02eb" timestamp="2026-11-24T22:45:28.548Z" tests="4" failures="0" errors="0" time="0.086">
+    <testcase name="Status 401 Unauthorized (Auth not in workstation network)" time="0.086" classname="I1AuthValidacionDeSesion11GetApiResenasMeConSesionValidaViaGateway"/>
+    <testcase name="Error code is INVALID_REQUEST" time="0.086" classname="I1AuthValidacionDeSesion11GetApiResenasMeConSesionValidaViaGateway"/>
+    <testcase name="Error message is descriptive" time="0.086" classname="I1AuthValidacionDeSesion11GetApiResenasMeConSesionValidaViaGateway"/>
+    <testcase name="Has correlationId in error" time="0.086" classname="I1AuthValidacionDeSesion11GetApiResenasMeConSesionValidaViaGateway"/>
+  </testsuite>
+  <testsuite name="I1 - Auth: Validación de Sesión / 1.2 GET /api/resenas/me - Sin cookie (debe dar 401)" id="ebfff805-726e-4483-9b82-050a23fa4a1d" timestamp="2026-11-24T22:45:28.548Z" tests="4" failures="0" errors="0" time="0.011">
+    <testcase name="Status 401 Unauthorized" time="0.011" classname="I1AuthValidacionDeSesion12GetApiResenasMeSinCookieDebeDar401"/>
+    <testcase name="Error code is INVALID_REQUEST" time="0.011" classname="I1AuthValidacionDeSesion12GetApiResenasMeSinCookieDebeDar401"/>
+    <testcase name="Error message is descriptive" time="0.011" classname="I1AuthValidacionDeSesion12GetApiResenasMeSinCookieDebeDar401"/>
+    <testcase name="Has correlationId in error" time="0.011" classname="I1AuthValidacionDeSesion12GetApiResenasMeSinCookieDebeDar401"/>
+  </testsuite>
+  <testsuite name="I1 - Auth: Validación de Sesión / 1.3 POST /api/resenas - Con rol organizador (debe dar 403)" id="8cb7df37-656d-4ad4-a813-3bda23d275bd" timestamp="2026-11-24T22:45:28.548Z" tests="2" failures="0" errors="0" time="0.028">
+    <testcase name="Status 401 or 403 (Auth not in network returns 401, with Auth returns 403)" time="0.028" classname="I1AuthValidacionDeSesion13PostApiResenasConRolOrganizadorDebeDar403"/>
+    <testcase name="Error code is INVALID_REQUEST or 403 message" time="0.028" classname="I1AuthValidacionDeSesion13PostApiResenasConRolOrganizadorDebeDar403"/>
+  </testsuite>
+</testsuites>

@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { afterEach, test } = require('node:test');
 
 process.env.API_GATEWAY_URL = 'http://gateway:8080';
+process.env.CATALOGO_SERVICE_URL = ''; // force fallback to gateway /api/catalogo
 process.env.CHECKIN_SERVICE_URL = 'http://gateway:8080/api/checkin';
 process.env.SERVICE_TO_SERVICE_TOKEN = '';
 process.env.CATALOGO_TIMEOUT_MS = '100';

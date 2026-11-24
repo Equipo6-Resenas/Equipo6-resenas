@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Entrega 4 - Pruebas de Integración Reseñas (Workstation)" tests="5" time="0.087">
+  <testsuite name="Utilitarios y Health Checks / Health Check Backend directo" id="a102cfee-9ae3-4bf1-971a-acac24e2e563" timestamp="2026-11-24T22:45:39.960Z" tests="2" failures="0" errors="0" time="0.042">
+    <testcase name="Status 200 OK" time="0.042" classname="UtilitariosYHealthChecksHealthCheckBackendDirecto"/>
+    <testcase name="Health reports OK and base_datos conectada" time="0.042" classname="UtilitariosYHealthChecksHealthCheckBackendDirecto"/>
+  </testsuite>
+  <testsuite name="Utilitarios y Health Checks / Health Check Gateway" id="96d4115e-795e-44d7-8d37-07c9b0eea106" timestamp="2026-11-24T22:45:39.960Z" tests="2" failures="0" errors="0" time="0.008">
+    <testcase name="Status 200 OK" time="0.008" classname="UtilitariosYHealthChecksHealthCheckGateway"/>
+    <testcase name="Gateway health has expected structure" time="0.008" classname="UtilitariosYHealthChecksHealthCheckGateway"/>
+  </testsuite>
+  <testsuite name="Utilitarios y Health Checks / Listar reseñas con filtros (público)" id="7160aefd-2474-4068-a249-3acc314bef7f" timestamp="2026-11-24T22:45:39.960Z" tests="3" failures="0" errors="0" time="0.016">
+    <testcase name="Status 200 OK" time="0.016" classname="UtilitariosYHealthChecksListarResenasConFiltrosPublico"/>
+    <testcase name="Returns array" time="0.016" classname="UtilitariosYHealthChecksListarResenasConFiltrosPublico"/>
+    <testcase name="Items have expected fields" time="0.016" classname="UtilitariosYHealthChecksListarResenasConFiltrosPublico"/>
+  </testsuite>
+  <testsuite name="Utilitarios y Health Checks / Promedio simple de un evento (público)" id="58ba39fc-5409-4187-aa79-cc71565dd952" timestamp="2026-11-24T22:45:39.960Z" tests="4" failures="0" errors="0" time="0.010">
+    <testcase name="Status 200 OK" time="0.010" classname="UtilitariosYHealthChecksPromedioSimpleDeUnEventoPublico"/>
+    <testcase name="Returns promedio field" time="0.010" classname="UtilitariosYHealthChecksPromedioSimpleDeUnEventoPublico"/>
+    <testcase name="promedio is number with 1 decimal or null" time="0.010" classname="UtilitariosYHealthChecksPromedioSimpleDeUnEventoPublico"/>
+    <testcase name="evt-101 has promedio 4.6 from seed (5 reseñas: 5,4,5,5,4 = 23/5)" time="0.010" classname="UtilitariosYHealthChecksPromedioSimpleDeUnEventoPublico"/>
+  </testsuite>
+  <testsuite name="Utilitarios y Health Checks / Respuesta organizador - POST /api/resenas/:idResena/respuestas" id="577ec299-aebe-4371-aef5-346e4b0015a7" timestamp="2026-11-24T22:45:39.960Z" tests="4" failures="0" errors="0" time="0.011">
+    <testcase name="Status 201, 401, 403 or 404" time="0.011" classname="UtilitariosYHealthChecksRespuestaOrganizadorPostApiResenasIdResenaRespuestas"/>
+    <testcase name="If 201: returns response object" time="0.011" classname="UtilitariosYHealthChecksRespuestaOrganizadorPostApiResenasIdResenaRespuestas"/>
+    <testcase name="If 401: INVALID_REQUEST" time="0.011" classname="UtilitariosYHealthChecksRespuestaOrganizadorPostApiResenasIdResenaRespuestas"/>
+    <testcase name="If 403: not organizador or not owner" time="0.011" classname="UtilitariosYHealthChecksRespuestaOrganizadorPostApiResenasIdResenaRespuestas"/>
+  </testsuite>
+</testsuites>
